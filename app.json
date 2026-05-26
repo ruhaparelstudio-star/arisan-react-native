@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Arisan",
+    "slug": "arisan",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "arisan",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.arisan.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#7F77DD"
+      },
+      "package": "com.arisan.app",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
