@@ -9,3 +9,5 @@ export const helloWorld = onCall((req) => {
 });
 
 export { rateLimitOTP } from './callable/rateLimitOTP';
+export { createGroup } from './callable/createGroup';
+export { joinViaCode } from './callable/joinViaCode';
