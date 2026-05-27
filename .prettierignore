@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+functions/node_modules/
+
+# Build output
+functions/lib/
+dist/
+build/
+.expo/
+.expo-shared/
+
+# Native projects (managed by Expo prebuild)
+ios/
+android/
+
+# Lock files
+package-lock.json
+yarn.lock
+functions/package-lock.json
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Firebase config (auto-generated)
+google-services.json
+GoogleService-Info.plist
+
+# Env
+.env
+.env.local
+.env.*.local

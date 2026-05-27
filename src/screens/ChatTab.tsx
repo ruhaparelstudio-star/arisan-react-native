@@ -39,13 +39,8 @@ export function ChatTab({ embedded }: Props) {
     if (!t) return;
     const now = new Date();
     const time =
-      String(now.getHours()).padStart(2, '0') +
-      ':' +
-      String(now.getMinutes()).padStart(2, '0');
-    setMessages((m) => [
-      ...m,
-      { id: Date.now(), kind: 'msg', who: ME, mine: true, text: t, time },
-    ]);
+      String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    setMessages((m) => [...m, { id: Date.now(), kind: 'msg', who: ME, mine: true, text: t, time }]);
     setDraft('');
   };
 
@@ -79,7 +74,7 @@ export function ChatTab({ embedded }: Props) {
             <SystemRow key={r.id} text={r.text} />
           ) : (
             <MessageRow key={r.id} m={r} />
-          )
+          ),
         )}
       </ScrollView>
 
@@ -87,12 +82,7 @@ export function ChatTab({ embedded }: Props) {
         <Pressable style={styles.actionBtn}>
           <Plus size={20} color={colors.textMuted} strokeWidth={1.75} />
         </Pressable>
-        <View
-          style={[
-            styles.inputWrap,
-            focused && { borderColor: colors.primary },
-          ]}
-        >
+        <View style={[styles.inputWrap, focused && { borderColor: colors.primary }]}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -117,11 +107,7 @@ export function ChatTab({ embedded }: Props) {
             },
           ]}
         >
-          <Send
-            size={18}
-            color={draft.trim() ? '#FFF' : '#A8A8A2'}
-            strokeWidth={2.2}
-          />
+          <Send size={18} color={draft.trim() ? '#FFF' : '#A8A8A2'} strokeWidth={2.2} />
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -138,11 +124,7 @@ function SystemRow({ text }: { text: string }) {
   );
 }
 
-function MessageRow({
-  m,
-}: {
-  m: ChatMessage & { showHeader: boolean };
-}) {
+function MessageRow({ m }: { m: ChatMessage & { showHeader: boolean } }) {
   const mine = !!m.mine;
   const c = avatarColor(m.who || 'A');
   const accent = m.accent;
@@ -162,9 +144,7 @@ function MessageRow({
       <View style={{ width: 28 }}>
         {!mine && m.showHeader && (
           <View style={[styles.msgAvatar, { backgroundColor: c.bg }]}>
-            <Text style={[styles.msgAvatarText, { color: c.ink }]}>
-              {initials(m.who || '')}
-            </Text>
+            <Text style={[styles.msgAvatarText, { color: c.ink }]}>{initials(m.who || '')}</Text>
           </View>
         )}
       </View>
@@ -194,10 +174,7 @@ function MessageRow({
               style={[
                 styles.bubbleTime,
                 {
-                  color:
-                    mine || accent
-                      ? 'rgba(255,255,255,0.75)'
-                      : '#A8A8A2',
+                  color: mine || accent ? 'rgba(255,255,255,0.75)' : '#A8A8A2',
                 },
               ]}
             >

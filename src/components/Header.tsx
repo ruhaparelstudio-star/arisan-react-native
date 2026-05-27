@@ -19,10 +19,7 @@ export function Header({ title, subtitle, onBack, leading, trailing }: Props) {
           <Pressable
             onPress={onBack}
             hitSlop={8}
-            style={({ pressed }) => [
-              styles.iconBtn,
-              pressed && { opacity: 0.6 },
-            ]}
+            style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
           >
             <ChevronLeft size={22} color={colors.text} strokeWidth={1.75} />
           </Pressable>

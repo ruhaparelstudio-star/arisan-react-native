@@ -53,8 +53,8 @@ export type Winner = {
   nama: string;
   decidedAt: number;
   method: 'random' | 'manual' | 'offline';
-  decidedBy: string;        // ketua userId
-  alasan?: string;          // wajib jika method = manual/offline
+  decidedBy: string; // ketua userId
+  alasan?: string; // wajib jika method = manual/offline
   // Untuk Mode 1 entries, decidedBy adalah ketua yang trigger generate, decidedAt sama untuk semua
 };
 ```
@@ -76,9 +76,9 @@ export const presetUrutanMode1 = onCall(async (req) => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Wajib login');
   const { groupId } = req.data ?? {};
   if (!groupId) throw new HttpsError('invalid-argument', 'groupId wajib');
-  
+
   const ketua = await assertKetua(req.auth.uid, groupId);
-  
+
   const groupRef = db.collection('groups').doc(groupId);
   const groupSnap = await groupRef.get();
   const group = groupSnap.data();
@@ -86,47 +86,59 @@ export const presetUrutanMode1 = onCall(async (req) => {
   if (group.undianMode !== 'mode1') {
     throw new HttpsError('failed-precondition', 'Grup ini bukan Mode 1');
   }
-  
+
   const membersSnap = await groupRef.collection('members').get();
   if (membersSnap.size !== group.jumlahPeriode) {
-    throw new HttpsError('failed-precondition', `Jumlah anggota (${membersSnap.size}) harus sama dengan jumlah periode (${group.jumlahPeriode}) sebelum preset`);
+    throw new HttpsError(
+      'failed-precondition',
+      `Jumlah anggota (${membersSnap.size}) harus sama dengan jumlah periode (${group.jumlahPeriode}) sebelum preset`,
+    );
   }
-  
+
   // Cek belum pernah preset
   const winnersSnap = await groupRef.collection('winners').limit(1).get();
   if (!winnersSnap.empty) {
-    throw new HttpsError('failed-precondition', 'Urutan sudah pernah di-generate, tidak bisa ulang');
+    throw new HttpsError(
+      'failed-precondition',
+      'Urutan sudah pernah di-generate, tidak bisa ulang',
+    );
   }
-  
+
   // Server-side random shuffle
   const userIds = membersSnap.docs.map((d) => d.id);
   const shuffled = randomShuffle(userIds);
-  
+
   await db.runTransaction(async (tx) => {
     const now = admin.firestore.FieldValue.serverTimestamp();
-    
+
     for (let i = 0; i < shuffled.length; i++) {
       const periodeId = String(i + 1).padStart(2, '0');
       const userId = shuffled[i];
       const memberData = membersSnap.docs.find((d) => d.id === userId)!.data();
-      
+
       tx.set(groupRef.collection('winners').doc(periodeId), {
-        periodeId, userId, nama: memberData.nama,
-        decidedAt: now, method: 'random', decidedBy: req.auth!.uid,
+        periodeId,
+        userId,
+        nama: memberData.nama,
+        decidedAt: now,
+        method: 'random',
+        decidedBy: req.auth!.uid,
       });
-      
+
       tx.update(groupRef.collection('members').doc(userId), {
         giliran: i + 1,
       });
     }
-    
+
     tx.set(groupRef.collection('activityLog').doc(), {
       type: 'urutan_preset_mode1',
-      actorId: req.auth!.uid, actorNama: ketua.nama,
-      timestamp: now, metadata: { jumlah: shuffled.length },
+      actorId: req.auth!.uid,
+      actorNama: ketua.nama,
+      timestamp: now,
+      metadata: { jumlah: shuffled.length },
     });
   });
-  
+
   return { ok: true, jumlah: shuffled.length };
 });
 ```
@@ -145,77 +157,92 @@ import admin from 'firebase-admin';
 
 export const triggerUndian = onCall(async (req) => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Wajib login');
-  
+
   const { groupId, periodeId, method = 'random', manualWinnerId, alasan } = req.data ?? {};
   if (!groupId || !periodeId) {
     throw new HttpsError('invalid-argument', 'groupId & periodeId wajib');
   }
-  
+
   if (method !== 'random' && method !== 'manual' && method !== 'offline') {
     throw new HttpsError('invalid-argument', 'method invalid');
   }
-  
-  if ((method === 'manual' || method === 'offline')) {
-    if (!manualWinnerId) throw new HttpsError('invalid-argument', 'manualWinnerId wajib untuk method manual/offline');
+
+  if (method === 'manual' || method === 'offline') {
+    if (!manualWinnerId)
+      throw new HttpsError('invalid-argument', 'manualWinnerId wajib untuk method manual/offline');
     if (!alasan || alasan.trim().length === 0) {
       throw new HttpsError('invalid-argument', 'Alasan wajib diisi untuk metode manual/offline');
     }
   }
-  
+
   const ketua = await assertKetua(req.auth.uid, groupId);
   const groupRef = db.collection('groups').doc(groupId);
-  
+
   const result = await db.runTransaction(async (tx) => {
     const groupSnap = await tx.get(groupRef);
     const group = groupSnap.data();
     if (!group) throw new HttpsError('not-found', 'Grup tidak ditemukan');
-    
+
     // Cek belum ada pemenang untuk periode ini
     const winnerRef = groupRef.collection('winners').doc(periodeId);
     const winnerSnap = await tx.get(winnerRef);
     if (winnerSnap.exists) {
       throw new HttpsError('failed-precondition', 'Pemenang sudah ditentukan');
     }
-    
+
     // Ambil eligible members (belum menang)
-    const membersSnap = await tx.get(groupRef.collection('members').where('sudahMenang', '==', false));
+    const membersSnap = await tx.get(
+      groupRef.collection('members').where('sudahMenang', '==', false),
+    );
     if (membersSnap.empty) {
       throw new HttpsError('failed-precondition', 'Semua anggota sudah menang');
     }
     const eligible = membersSnap.docs.map((d) => ({ userId: d.id, ...(d.data() as any) }));
-    
+
     let winner;
     if (method === 'random') {
-      winner = randomPick(eligible);  // server-side crypto.randomInt
+      winner = randomPick(eligible); // server-side crypto.randomInt
     } else {
       winner = eligible.find((m) => m.userId === manualWinnerId);
       if (!winner) {
         throw new HttpsError('invalid-argument', 'Anggota tidak ditemukan atau sudah menang');
       }
     }
-    
+
     const now = admin.firestore.FieldValue.serverTimestamp();
-    
+
     tx.set(winnerRef, {
-      periodeId, userId: winner.userId, nama: winner.nama,
-      decidedAt: now, method, decidedBy: req.auth!.uid,
+      periodeId,
+      userId: winner.userId,
+      nama: winner.nama,
+      decidedAt: now,
+      method,
+      decidedBy: req.auth!.uid,
       ...(alasan ? { alasan: alasan.trim() } : {}),
     });
-    
+
     tx.update(groupRef.collection('members').doc(winner.userId), {
-      sudahMenang: true, giliran: parseInt(periodeId),
+      sudahMenang: true,
+      giliran: parseInt(periodeId),
     });
-    
+
     tx.set(groupRef.collection('activityLog').doc(), {
       type: 'undian_done',
-      actorId: req.auth!.uid, actorNama: ketua.nama,
+      actorId: req.auth!.uid,
+      actorNama: ketua.nama,
       timestamp: now,
-      metadata: { periodeId, winnerId: winner.userId, winnerNama: winner.nama, method, alasan: alasan?.trim() },
+      metadata: {
+        periodeId,
+        winnerId: winner.userId,
+        winnerNama: winner.nama,
+        method,
+        alasan: alasan?.trim(),
+      },
     });
-    
+
     return winner;
   });
-  
+
   // Notif ke semua anggota di luar transaction
   const membersSnap = await groupRef.collection('members').get();
   for (const m of membersSnap.docs) {
@@ -238,7 +265,7 @@ export const triggerUndian = onCall(async (req) => {
       dedupKey: `undian_${groupId}_${periodeId}_${m.id}`,
     });
   }
-  
+
   return { ok: true, winnerId: result.userId, winnerNama: result.nama };
 });
 ```
@@ -286,6 +313,7 @@ Deploy rules.
 **HAPUS** seluruh logic `Math.random()` (line 54-58).
 
 Spec baru:
+
 - Modal dipanggil dari [src/screens/UrutanTab.tsx](../src/screens/UrutanTab.tsx) saat ketua tap "Mulai Undian Periode X"
 - Props: `groupId`, `periodeNomor`, `eligibleMembers: {userId, nama}[]`, `groupMode: 'mode1' | 'mode3'`
 - **Untuk grup Mode 1**: modal ini TIDAK dipakai untuk undian per-periode (sudah di-preset). Hanya dipakai untuk ketua override (manual/offline).
@@ -305,8 +333,9 @@ const handleConfirm = async () => {
   setLoading(true);
   try {
     await functions('asia-southeast2').httpsCallable('triggerUndian')({
-      groupId, periodeId,
-      method: choice,  // 'random' | 'manual' | 'offline'
+      groupId,
+      periodeId,
+      method: choice, // 'random' | 'manual' | 'offline'
       ...(choice !== 'random' && { manualWinnerId: winner, alasan: note.trim() }),
     });
     onClose();
@@ -336,6 +365,7 @@ Visual: untuk pilihan Random, hide section "Nama pemenang" dan "Alasan". Untuk M
 ### Task 8 — Wire [app/winner.tsx](../app/winner.tsx) ke real data
 
 Saat ini [app/winner.tsx](../app/winner.tsx) standalone screen. Wire param `groupId` & `periode`:
+
 - Fetch `groups/{groupId}/winners/{periodeId}` untuk konfirmasi user benar pemenang
 - Tampilkan: nama grup, periode, nominal total (= group.nominal × group.jumlahPeriode)
 - CTA "Set Tanggal Pelaksanaan" → `router.push('/set-date?groupId=X&periode=Y')` (set-date akan di-rework di Phase 6)

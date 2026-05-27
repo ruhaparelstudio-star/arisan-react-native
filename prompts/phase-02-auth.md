@@ -30,8 +30,8 @@ User dapat register dengan nomor HP +62 → terima OTP < 60 detik → verifikasi
    - §27 Week 2 checklist
 2. **PRD §4.2 F01, §10.1** — acceptance criteria auth
 3. **File existing untuk audit gap (§1.5)**:
-   - [app/(tabs)/profil.tsx](../app/(tabs)/profil.tsx) — saat ini hardcode `budi.santoso@email.com`. Phase 2 WAJIB hapus email field, ganti nomor HP (tidak ditampilkan ke anggota lain).
-   - [app/_layout.tsx](../app/_layout.tsx) — sekarang tidak ada auth gate. Phase 2 wajib tambah.
+   - [app/(tabs)/profil.tsx](<../app/(tabs)/profil.tsx>) — saat ini hardcode `budi.santoso@email.com`. Phase 2 WAJIB hapus email field, ganti nomor HP (tidak ditampilkan ke anggota lain).
+   - [app/\_layout.tsx](../app/_layout.tsx) — sekarang tidak ada auth gate. Phase 2 wajib tambah.
 
 ---
 
@@ -54,15 +54,13 @@ export const rateLimitOTP = onCall(async (req) => {
   if (!phone || !/^\+62\d{8,13}$/.test(phone)) {
     throw new HttpsError('invalid-argument', 'Format nomor HP tidak valid');
   }
-  
+
   const docRef = db.collection('otpQuota').doc(phone);
   const result = await db.runTransaction(async (tx) => {
     const snap = await tx.get(docRef);
     const now = Date.now();
     const data = snap.data();
-    const attempts: number[] = (data?.attempts ?? []).filter(
-      (t: number) => now - t < WINDOW_MS
-    );
+    const attempts: number[] = (data?.attempts ?? []).filter((t: number) => now - t < WINDOW_MS);
     if (attempts.length >= MAX_PER_HOUR) {
       return { allowed: false, retryAfterMs: WINDOW_MS - (now - attempts[0]) };
     }
@@ -70,15 +68,19 @@ export const rateLimitOTP = onCall(async (req) => {
     tx.set(docRef, { attempts, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
     return { allowed: true };
   });
-  
+
   if (!result.allowed) {
-    throw new HttpsError('resource-exhausted', `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil((result as any).retryAfterMs / 60000)} menit`);
+    throw new HttpsError(
+      'resource-exhausted',
+      `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil((result as any).retryAfterMs / 60000)} menit`,
+    );
   }
   return { ok: true };
 });
 ```
 
 Export di [functions/src/index.ts](../functions/src/index.ts):
+
 ```ts
 export { rateLimitOTP } from './callable/rateLimitOTP';
 ```
@@ -95,11 +97,11 @@ import auth from '@react-native-firebase/auth';
 
 type UserProfile = {
   uid: string;
-  phone: string;        // +62 format, NEVER show to other members
+  phone: string; // +62 format, NEVER show to other members
   nama: string;
   fotoUrl?: string;
   timezone: 'Asia/Jakarta' | 'Asia/Makassar' | 'Asia/Jayapura';
-  consentAt: number;    // epoch ms — first-run consent timestamp
+  consentAt: number; // epoch ms — first-run consent timestamp
 };
 
 type AuthState = {
@@ -134,22 +136,27 @@ import { firestore } from './firebase';
 export const sendOtp = async (phone: string): Promise<FirebaseAuthTypes.ConfirmationResult> => {
   // Validate format
   if (!/^\+62\d{8,13}$/.test(phone)) throw new Error('Format nomor HP tidak valid');
-  
+
   // Rate limit check via Cloud Function
   await functions('asia-southeast2').httpsCallable('rateLimitOTP')({ phone });
-  
+
   // Send OTP
   return auth().signInWithPhoneNumber(phone);
 };
 
 export const verifyOtp = async (
   confirmation: FirebaseAuthTypes.ConfirmationResult,
-  code: string
+  code: string,
 ): Promise<FirebaseAuthTypes.UserCredential> => {
   return confirmation.confirm(code) as Promise<FirebaseAuthTypes.UserCredential>;
 };
 
-export const createUserProfile = async (uid: string, phone: string, nama: string, timezone: string) => {
+export const createUserProfile = async (
+  uid: string,
+  phone: string,
+  nama: string,
+  timezone: string,
+) => {
   await firestore().collection('users').doc(uid).set({
     phone,
     nama,
@@ -173,18 +180,18 @@ Update [firestore.rules](../firestore.rules):
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // users — user only read/write own doc
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       allow delete: if false;
     }
-    
+
     // otpQuota — DENY all client access (only Cloud Function via admin SDK)
     match /otpQuota/{phone} {
       allow read, write: if false;
     }
-    
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
@@ -197,7 +204,7 @@ Deploy: `firebase deploy --only firestore:rules --project dev`.
 
 ### Task 5 — Splash screen (initial routing)
 
-Buat [app/splash.tsx](../app/splash.tsx) atau handle di [app/_layout.tsx](../app/_layout.tsx). Pakai pattern:
+Buat [app/splash.tsx](../app/splash.tsx) atau handle di [app/\_layout.tsx](../app/_layout.tsx). Pakai pattern:
 
 ```tsx
 // app/_layout.tsx (modify existing)
@@ -234,7 +241,8 @@ Tambahkan splash visual sederhana (background `colors.primary` + logo) saat `ini
 
 Buat folder [app/auth/](../app/auth/) dengan:
 
-**[app/auth/_layout.tsx](../app/auth/_layout.tsx):**
+**[app/auth/\_layout.tsx](../app/auth/_layout.tsx):**
+
 ```tsx
 import { Stack } from 'expo-router';
 export default function AuthLayout() {
@@ -243,6 +251,7 @@ export default function AuthLayout() {
 ```
 
 **[app/auth/phone.tsx](../app/auth/phone.tsx)** — input nomor HP:
+
 - Header: "Masuk dengan Nomor HP"
 - Prefix box "+62" disabled, TextInput numeric untuk sisanya
 - Format display real-time: `812-3456-7890`
@@ -252,6 +261,7 @@ export default function AuthLayout() {
 - Pakai komponen [src/components/Button.tsx](../src/components/Button.tsx)
 
 **[app/auth/otp.tsx](../app/auth/otp.tsx)** — input 6-digit OTP:
+
 - 6 separate TextInput boxes (otomatis fokus next saat digit ketik)
 - Countdown timer "Kirim ulang dalam 0:60" → setelah expire jadi tombol "Kirim ulang"
 - Tombol "Verifikasi" → `verifyOtp(confirmation, code)`
@@ -259,6 +269,7 @@ export default function AuthLayout() {
 - Error handling: kode salah, expired, network error — toast jelas dalam Bahasa Indonesia
 
 **[app/auth/consent.tsx](../app/auth/consent.tsx)** — first-run consent:
+
 - Sapaan: "Sebelum lanjut..."
 - Card scrollable berisi Privacy Policy ringkas (placeholder text, full PP di Phase 9)
 - Card scrollable berisi Terms of Service ringkas (placeholder, full ToS di Phase 9)
@@ -270,7 +281,7 @@ export default function AuthLayout() {
 
 ### Task 7 — Update profil.tsx (fix §1.5 mismatch #5)
 
-Edit [app/(tabs)/profil.tsx](../app/(tabs)/profil.tsx):
+Edit [app/(tabs)/profil.tsx](<../app/(tabs)/profil.tsx>):
 
 1. **HAPUS** baris `<Text style={styles.email}>budi.santoso@email.com</Text>` (line ~75)
 2. **GANTI** dengan: `<Text style={styles.phoneMasked}>+62 ••• ••• {last4}</Text>` (masked, hanya 4 digit terakhir tampil untuk user sendiri sebagai konfirmasi)
@@ -294,18 +305,18 @@ export const registerPushToken = async (uid: string) => {
       importance: Notifications.AndroidImportance.HIGH,
     });
   }
-  
+
   const { status } = await Notifications.requestPermissionsAsync();
   if (status !== 'granted') return null;
-  
+
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
   const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-  
+
   await firestore().collection('users').doc(uid).update({
     expoPushToken: token,
     tokenUpdatedAt: firestore.FieldValue.serverTimestamp(),
   });
-  
+
   return token;
 };
 ```
@@ -315,6 +326,7 @@ Call dari consent flow setelah `createUserProfile` sukses (per [CLAUDE.md §5b](
 ### Task 9 — Loading & error states
 
 Setiap screen auth wajib handle:
+
 - Loading: tombol jadi spinner saat call in-flight
 - Error: toast dengan pesan Bahasa Indonesia. Mapping common error code Firebase Auth:
   - `auth/invalid-phone-number` → "Format nomor HP tidak valid"
@@ -334,8 +346,8 @@ Setiap screen auth wajib handle:
 - [ ] `expoPushToken` tersimpan di `users/{uid}` setelah consent
 - [ ] App reopen → langsung Beranda tanpa login ulang (session persist via Firebase Auth)
 - [ ] Logout dari profil → kembali ke auth/phone
-- [ ] [app/(tabs)/profil.tsx](../app/(tabs)/profil.tsx) tidak ada lagi `budi.santoso@email.com` — diganti masked phone
-- [ ] [app/(tabs)/profil.tsx](../app/(tabs)/profil.tsx) ambil nama dari `useAuthStore`, bukan hardcoded
+- [ ] [app/(tabs)/profil.tsx](<../app/(tabs)/profil.tsx>) tidak ada lagi `budi.santoso@email.com` — diganti masked phone
+- [ ] [app/(tabs)/profil.tsx](<../app/(tabs)/profil.tsx>) ambil nama dari `useAuthStore`, bukan hardcoded
 - [ ] `npm run lint && npm run typecheck` green
 - [ ] CLAUDE.md §1.5 mismatch #5 (email vs HP) bisa dicoret — update CLAUDE.md di akhir phase
 - [ ] Branch `feat/phase-02-auth` + PR opened
@@ -376,7 +388,7 @@ Setiap screen auth wajib handle:
 
 - Sebelum deploy `rateLimitOTP` — pastikan emulator test green
 - Jika test number belum ditambah di Firebase Console — minta user setup dulu
-- Sebelum hapus baris email dari [profil.tsx](../app/(tabs)/profil.tsx) — informasikan ke user bahwa email field memang harus dihapus (per §1.5 mismatch #5)
+- Sebelum hapus baris email dari [profil.tsx](<../app/(tabs)/profil.tsx>) — informasikan ke user bahwa email field memang harus dihapus (per §1.5 mismatch #5)
 - Jika muncul question soal teks Privacy Policy / ToS placeholder — tanya: pakai lorem ipsum atau draft 1 paragraf real
 
 ---

@@ -42,8 +42,16 @@ export default function DetailScreen() {
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        <TabPill label="Pembayaran" active={tab === 'pembayaran'} onPress={() => setTab('pembayaran')} />
-        <TabPill label="Urutan Giliran" active={tab === 'urutan'} onPress={() => setTab('urutan')} />
+        <TabPill
+          label="Pembayaran"
+          active={tab === 'pembayaran'}
+          onPress={() => setTab('pembayaran')}
+        />
+        <TabPill
+          label="Urutan Giliran"
+          active={tab === 'urutan'}
+          onPress={() => setTab('urutan')}
+        />
         <TabPill label="Chat" active={tab === 'chat'} onPress={() => setTab('chat')} />
       </View>
 

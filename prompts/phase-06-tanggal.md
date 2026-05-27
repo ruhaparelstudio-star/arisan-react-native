@@ -42,10 +42,10 @@ export type Period = {
   periodeId: string;
   nomor: number;
   jatuhTempo: number;
-  pemenangId?: string;        // set saat triggerUndian sukses
+  pemenangId?: string; // set saat triggerUndian sukses
   tanggalPelaksanaan?: number; // set saat pemenang/ketua confirm
   pelaksanaanLockedAt?: number;
-  pelaksanaanSetBy?: string;   // userId (pemenang biasanya, ketua jika override)
+  pelaksanaanSetBy?: string; // userId (pemenang biasanya, ketua jika override)
   pelaksanaanOverrideReason?: string;
   status: 'open' | 'closed';
 };
@@ -64,22 +64,22 @@ import admin from 'firebase-admin';
 
 export const setTanggalPelaksanaan = onCall(async (req) => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Wajib login');
-  
+
   const { groupId, periodeId, tanggal } = req.data ?? {};
   if (!groupId || !periodeId || typeof tanggal !== 'number') {
     throw new HttpsError('invalid-argument', 'groupId, periodeId, tanggal (epoch ms) wajib');
   }
-  
+
   // Validasi min H+3 (dari now)
   const minTanggal = Date.now() + 3 * 86400 * 1000;
   if (tanggal < minTanggal) {
     throw new HttpsError('invalid-argument', 'Tanggal minimal H+3 dari hari ini');
   }
-  
+
   const member = await assertMember(req.auth.uid, groupId);
   const periodeRef = db.collection('groups').doc(groupId).collection('periods').doc(periodeId);
   const winnerRef = db.collection('groups').doc(groupId).collection('winners').doc(periodeId);
-  
+
   await db.runTransaction(async (tx) => {
     const [periodeSnap, winnerSnap] = await Promise.all([tx.get(periodeRef), tx.get(winnerRef)]);
     if (!winnerSnap.exists) {
@@ -91,22 +91,27 @@ export const setTanggalPelaksanaan = onCall(async (req) => {
     if (periodeSnap.data()?.pelaksanaanLockedAt) {
       throw new HttpsError('failed-precondition', 'Tanggal sudah dikunci, tidak bisa diubah');
     }
-    
+
     const now = admin.firestore.FieldValue.serverTimestamp();
-    tx.set(periodeRef, {
-      tanggalPelaksanaan: tanggal,
-      pelaksanaanLockedAt: now,
-      pelaksanaanSetBy: req.auth!.uid,
-    }, { merge: true });
-    
+    tx.set(
+      periodeRef,
+      {
+        tanggalPelaksanaan: tanggal,
+        pelaksanaanLockedAt: now,
+        pelaksanaanSetBy: req.auth!.uid,
+      },
+      { merge: true },
+    );
+
     tx.set(db.collection('groups').doc(groupId).collection('activityLog').doc(), {
       type: 'tanggal_set',
-      actorId: req.auth!.uid, actorNama: member.nama,
+      actorId: req.auth!.uid,
+      actorNama: member.nama,
       timestamp: now,
       metadata: { periodeId, tanggal },
     });
   });
-  
+
   // Notif ke semua anggota grup
   const membersSnap = await db.collection('groups').doc(groupId).collection('members').get();
   for (const m of membersSnap.docs) {
@@ -121,13 +126,18 @@ export const setTanggalPelaksanaan = onCall(async (req) => {
       dedupKey: `tanggal_set_${groupId}_${periodeId}_${m.id}`,
     });
   }
-  
+
   return { ok: true };
 });
 
 function formatTanggal(ms: number): string {
   // Quick format - real localized format pakai dayjs di client
-  return new Date(ms).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return new Date(ms).toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 ```
 
@@ -144,7 +154,7 @@ import admin from 'firebase-admin';
 
 export const overrideTanggal = onCall(async (req) => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Wajib login');
-  
+
   const { groupId, periodeId, tanggal, alasan } = req.data ?? {};
   if (!groupId || !periodeId || typeof tanggal !== 'number') {
     throw new HttpsError('invalid-argument', 'groupId, periodeId, tanggal wajib');
@@ -152,35 +162,40 @@ export const overrideTanggal = onCall(async (req) => {
   if (!alasan || alasan.trim().length === 0) {
     throw new HttpsError('invalid-argument', 'Alasan override wajib diisi');
   }
-  
+
   const minTanggal = Date.now() + 3 * 86400 * 1000;
   if (tanggal < minTanggal) {
     throw new HttpsError('invalid-argument', 'Tanggal minimal H+3 dari hari ini');
   }
-  
+
   const ketua = await assertKetua(req.auth.uid, groupId);
   const periodeRef = db.collection('groups').doc(groupId).collection('periods').doc(periodeId);
-  
+
   await db.runTransaction(async (tx) => {
     const periodeSnap = await tx.get(periodeRef);
     if (!periodeSnap.exists) throw new HttpsError('not-found', 'Periode tidak ditemukan');
-    
+
     const now = admin.firestore.FieldValue.serverTimestamp();
-    tx.set(periodeRef, {
-      tanggalPelaksanaan: tanggal,
-      pelaksanaanLockedAt: now,
-      pelaksanaanSetBy: req.auth!.uid,
-      pelaksanaanOverrideReason: alasan.trim(),
-    }, { merge: true });
-    
+    tx.set(
+      periodeRef,
+      {
+        tanggalPelaksanaan: tanggal,
+        pelaksanaanLockedAt: now,
+        pelaksanaanSetBy: req.auth!.uid,
+        pelaksanaanOverrideReason: alasan.trim(),
+      },
+      { merge: true },
+    );
+
     tx.set(db.collection('groups').doc(groupId).collection('activityLog').doc(), {
       type: 'tanggal_overridden',
-      actorId: req.auth!.uid, actorNama: ketua.nama,
+      actorId: req.auth!.uid,
+      actorNama: ketua.nama,
       timestamp: now,
       metadata: { periodeId, tanggal, alasan: alasan.trim() },
     });
   });
-  
+
   // Notif semua anggota
   const membersSnap = await db.collection('groups').doc(groupId).collection('members').get();
   for (const m of membersSnap.docs) {
@@ -195,7 +210,7 @@ export const overrideTanggal = onCall(async (req) => {
       dedupKey: `tanggal_override_${groupId}_${periodeId}_${m.id}_${Date.now()}`,
     });
   }
-  
+
   return { ok: true };
 });
 ```
@@ -215,27 +230,28 @@ export const checkTanggalDeadline = onSchedule(
   async () => {
     // Cek winners yang sudah > 3 hari tapi belum ada tanggalPelaksanaan
     const threshold = dayjs().subtract(3, 'day').valueOf();
-    
-    const winnersSnap = await db.collectionGroup('winners')
+
+    const winnersSnap = await db
+      .collectionGroup('winners')
       .where('decidedAt', '<', new Date(threshold))
       .get();
-    
+
     for (const winnerDoc of winnersSnap.docs) {
       const groupRef = winnerDoc.ref.parent.parent!;
       const periodeId = winnerDoc.id;
-      
+
       const periodeSnap = await groupRef.collection('periods').doc(periodeId).get();
-      if (periodeSnap.data()?.pelaksanaanLockedAt) continue;  // sudah set, skip
-      
+      if (periodeSnap.data()?.pelaksanaanLockedAt) continue; // sudah set, skip
+
       // Notif ketua untuk override
       const groupSnap = await groupRef.get();
       const ketuaId = groupSnap.data()?.ketuaId;
       if (!ketuaId) continue;
-      
+
       const userDoc = await db.collection('users').doc(ketuaId).get();
       const token = userDoc.data()?.expoPushToken;
       if (!token) continue;
-      
+
       const winner = winnerDoc.data();
       await sendNotif({
         token,
@@ -245,7 +261,7 @@ export const checkTanggalDeadline = onSchedule(
         dedupKey: `tanggal_overdue_ketua_${groupRef.id}_${periodeId}_${dayjs().format('YYYY-MM-DD')}`,
       });
     }
-  }
+  },
 );
 ```
 
@@ -271,43 +287,48 @@ export const sendPelaksanaanReminder = onSchedule(
   async () => {
     const now = dayjs().tz(TZ);
     const offsets = [3, 1, 0];
-    
+
     for (const offset of offsets) {
       const targetStart = now.add(offset, 'day').startOf('day').valueOf();
       const targetEnd = now.add(offset, 'day').endOf('day').valueOf();
-      
-      const periodSnap = await db.collectionGroup('periods')
+
+      const periodSnap = await db
+        .collectionGroup('periods')
         .where('tanggalPelaksanaan', '>=', targetStart)
         .where('tanggalPelaksanaan', '<=', targetEnd)
         .get();
-      
+
       for (const periodDoc of periodSnap.docs) {
         const groupRef = periodDoc.ref.parent.parent!;
         const periode = periodDoc.data();
-        
+
         // Notif semua anggota grup
         const members = await groupRef.collection('members').get();
         for (const m of members.docs) {
           const userDoc = await db.collection('users').doc(m.id).get();
           const token = userDoc.data()?.expoPushToken;
           if (!token) continue;
-          
+
           const label = offset === 0 ? 'hari ini' : `${offset} hari lagi`;
           await sendNotif({
             token,
             title: 'Reminder pelaksanaan arisan',
             body: `Pelaksanaan periode ${periode.nomor} ${label} (${new Date(periode.tanggalPelaksanaan).toLocaleDateString('id-ID')})`,
-            data: { type: 'pelaksanaan-reminder', route: `arisan://group/${groupRef.id}?tab=urutan` },
+            data: {
+              type: 'pelaksanaan-reminder',
+              route: `arisan://group/${groupRef.id}?tab=urutan`,
+            },
             dedupKey: `pelaksanaan_reminder_${groupRef.id}_${periodDoc.id}_${m.id}_H-${offset}_${now.format('YYYY-MM-DD')}`,
           });
         }
       }
     }
-  }
+  },
 );
 ```
 
 **Index requirement** — tambah [firestore.indexes.json](../firestore.indexes.json):
+
 ```json
 {
   "collectionGroup": "periods",
@@ -323,6 +344,7 @@ Export semua function di [functions/src/index.ts](../functions/src/index.ts), de
 **HAPUS** hardcoded constants `TODAY = 12`, `FIRST_DAY_COL = 6`, `DAYS_IN_MONTH = 30`, "Juni 2025" string.
 
 Spec baru:
+
 - Receive params: `groupId`, `periodeId` (via `useLocalSearchParams`)
 - Verify: user adalah pemenang periode tersebut (load `winners/{periodeId}`, cek `userId === currentUser.uid`)
 - State: `currentMonth` (dayjs object, default = bulan saat ini), `selected` (dayjs object | null)
@@ -334,7 +356,8 @@ Spec baru:
 - Tombol Konfirmasi → `httpsCallable('setTanggalPelaksanaan')({ groupId, periodeId, tanggal: selected.valueOf() })`
 - After sukses → router.back() ke detail grup
 
-**Setup dayjs locale Indonesia** di app/_layout.tsx (kalau belum di Phase 1):
+**Setup dayjs locale Indonesia** di app/\_layout.tsx (kalau belum di Phase 1):
+
 ```ts
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
@@ -344,6 +367,7 @@ dayjs.locale('id');
 ### Task 7 — Screen ketua override tanggal
 
 Buat [app/grup/[id]/override-tanggal.tsx](../app/grup/%5Bid%5D/override-tanggal.tsx):
+
 - Params: `periodeId`
 - Pemilik calendar widget sama seperti set-date, plus TextInput "Alasan override (wajib)"
 - Submit → `httpsCallable('overrideTanggal')`
@@ -352,6 +376,7 @@ Buat [app/grup/[id]/override-tanggal.tsx](../app/grup/%5Bid%5D/override-tanggal.
 ### Task 8 — Update [src/screens/UrutanTab.tsx](../src/screens/UrutanTab.tsx)
 
 Tampilkan tanggal pelaksanaan untuk setiap periode yang sudah set:
+
 - Format: "Sabtu, 15 Juni 2025" (pakai dayjs format Bahasa Indonesia)
 - Badge "Terkunci" jika `pelaksanaanLockedAt` ada
 - Untuk ketua, button "Override Tanggal" jika ada periode dengan `winner.decidedAt < now - 3day && !pelaksanaanLockedAt`

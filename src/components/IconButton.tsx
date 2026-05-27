@@ -12,15 +12,7 @@ type Props = {
   badge?: React.ReactNode;
 };
 
-export function IconButton({
-  onPress,
-  children,
-  size = 40,
-  bordered,
-  bg,
-  style,
-  badge,
-}: Props) {
+export function IconButton({ onPress, children, size = 40, bordered, bg, style, badge }: Props) {
   return (
     <Pressable
       onPress={onPress}

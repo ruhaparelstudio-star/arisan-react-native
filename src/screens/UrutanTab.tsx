@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArrowLeftRight, Check } from 'lucide-react-native';
 import { Toast } from '@/components';
 import { avatarColor, colors, fonts, radii, shadows } from '@/theme';
@@ -37,9 +30,7 @@ export function UrutanTab() {
         <View style={styles.modeRow}>
           <View style={styles.modePill}>
             <ArrowLeftRight size={12} color={colors.textMuted} strokeWidth={2} />
-            <Text style={styles.modePillText}>
-              Mode Hybrid — dikocok tiap periode
-            </Text>
+            <Text style={styles.modePillText}>Mode Hybrid — dikocok tiap periode</Text>
           </View>
         </View>
 
@@ -47,14 +38,10 @@ export function UrutanTab() {
         <View style={styles.activeCard}>
           <View style={styles.activeHead}>
             <Text style={{ fontSize: 22 }}>🏆</Text>
-            <Text style={styles.activeHeadLabel}>
-              Periode 3 — Sedang Berjalan
-            </Text>
+            <Text style={styles.activeHeadLabel}>Periode 3 — Sedang Berjalan</Text>
           </View>
           <Text style={styles.activeName}>Siti Lestari</Text>
-          <Text style={styles.activePelaksanaan}>
-            Pelaksanaan: Sabtu, 15 Juni 2025
-          </Text>
+          <Text style={styles.activePelaksanaan}>Pelaksanaan: Sabtu, 15 Juni 2025</Text>
           <View style={styles.confirmBadge}>
             <Check size={12} color={colors.successInk} strokeWidth={2.5} />
             <Text style={styles.confirmBadgeText}>Tanggal Terkonfirmasi</Text>
@@ -88,10 +75,7 @@ export function UrutanTab() {
         {/* Trigger Ketua */}
         <Pressable
           onPress={() => setModalOpen(true)}
-          style={({ pressed }) => [
-            styles.triggerBtn,
-            pressed && { opacity: 0.85 },
-          ]}
+          style={({ pressed }) => [styles.triggerBtn, pressed && { opacity: 0.85 }]}
         >
           <Text style={{ fontSize: 16 }}>🎲</Text>
           <Text style={styles.triggerLabel}>Mulai Undian Periode 4 (Ketua)</Text>
@@ -163,34 +147,20 @@ function UrutanRow({
         },
       ]}
     >
-      <View
-        style={[
-          styles.no,
-          { backgroundColor: isActive ? colors.primary : '#F4F4F0' },
-        ]}
-      >
-        <Text
-          style={[
-            styles.noText,
-            { color: isActive ? '#FFF' : colors.textMuted },
-          ]}
-        >
-          {u.no}
-        </Text>
+      <View style={[styles.no, { backgroundColor: isActive ? colors.primary : '#F4F4F0' }]}>
+        <Text style={[styles.noText, { color: isActive ? '#FFF' : colors.textMuted }]}>{u.no}</Text>
       </View>
       <View style={[styles.smallAvatar, { backgroundColor: c.bg }]}>
         <Text style={[styles.smallAvatarText, { color: c.ink }]}>
-          {u.name.split(' ').map((p) => p[0]).slice(0, 2).join('')}
+          {u.name
+            .split(' ')
+            .map((p) => p[0])
+            .slice(0, 2)
+            .join('')}
         </Text>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text
-          style={[
-            styles.rowName,
-            isActive && { fontFamily: fonts.bold },
-          ]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.rowName, isActive && { fontFamily: fonts.bold }]} numberOfLines={1}>
           {assigned ? `${u.name} → ${assigned}` : u.name}
         </Text>
         <Text style={styles.rowSub}>Periode {u.periode}</Text>

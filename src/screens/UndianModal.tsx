@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ChevronDown, X } from 'lucide-react-native';
 import { Button } from '@/components';
 import { colors, fonts, radii, shadows } from '@/theme';
@@ -52,9 +45,7 @@ export function UndianModal({ onClose, onConfirm, eligible }: Props) {
   const handleConfirm = () => {
     if (!canConfirm) return;
     const picked =
-      choice === 'random'
-        ? eligible[Math.floor(Math.random() * eligible.length)]
-        : winner.trim();
+      choice === 'random' ? eligible[Math.floor(Math.random() * eligible.length)] : winner.trim();
     onConfirm(picked);
   };
 
@@ -69,9 +60,7 @@ export function UndianModal({ onClose, onConfirm, eligible }: Props) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>Mulai Undian Periode 4</Text>
-              <Text style={styles.subtitle}>
-                Tentukan siapa pemenang periode berikutnya
-              </Text>
+              <Text style={styles.subtitle}>Tentukan siapa pemenang periode berikutnya</Text>
             </View>
             <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={6}>
               <X size={16} color={colors.textMuted} strokeWidth={2.2} />
@@ -97,24 +86,12 @@ export function UndianModal({ onClose, onConfirm, eligible }: Props) {
                 <Text style={styles.inputLabel}>Nama pemenang</Text>
                 <Pressable
                   onPress={() => setPickerOpen((v) => !v)}
-                  style={[
-                    styles.picker,
-                    pickerOpen && { borderColor: colors.primary },
-                  ]}
+                  style={[styles.picker, pickerOpen && { borderColor: colors.primary }]}
                 >
-                  <Text
-                    style={[
-                      styles.pickerText,
-                      !winner && { color: '#A8A8A2' },
-                    ]}
-                  >
+                  <Text style={[styles.pickerText, !winner && { color: '#A8A8A2' }]}>
                     {winner || 'Pilih anggota...'}
                   </Text>
-                  <ChevronDown
-                    size={16}
-                    color={colors.textSubtle}
-                    strokeWidth={1.75}
-                  />
+                  <ChevronDown size={16} color={colors.textSubtle} strokeWidth={1.75} />
                 </Pressable>
                 {pickerOpen && (
                   <View style={[styles.dropdown, shadows.sheet]}>
@@ -155,9 +132,7 @@ export function UndianModal({ onClose, onConfirm, eligible }: Props) {
                   multiline
                   numberOfLines={3}
                   placeholder={
-                    choice === 'offline'
-                      ? 'Disaksikan oleh ...'
-                      : 'Alasan penunjukan ...'
+                    choice === 'offline' ? 'Disaksikan oleh ...' : 'Alasan penunjukan ...'
                   }
                   placeholderTextColor="#A8A8A2"
                   style={styles.textarea}
@@ -207,12 +182,7 @@ function RadioCard({
         },
       ]}
     >
-      <View
-        style={[
-          styles.radioIcon,
-          { backgroundColor: selected ? '#FFF' : '#F4F4F0' },
-        ]}
-      >
+      <View style={[styles.radioIcon, { backgroundColor: selected ? '#FFF' : '#F4F4F0' }]}>
         <Text style={{ fontSize: 18 }}>{option.icon}</Text>
       </View>
       <View style={{ flex: 1 }}>

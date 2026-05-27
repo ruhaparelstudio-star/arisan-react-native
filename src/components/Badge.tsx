@@ -23,14 +23,8 @@ export function Badge({ kind, children, showDot = true, style }: Props) {
   const s = KINDS[kind] ?? KINDS.Pending;
   return (
     <View style={[styles.base, { backgroundColor: s.bg }, style]}>
-      {showDot && (
-        <View
-          style={[styles.dot, { backgroundColor: s.fg, opacity: 0.8 }]}
-        />
-      )}
-      <Text style={[styles.label, { color: s.fg }]}>
-        {children ?? kind}
-      </Text>
+      {showDot && <View style={[styles.dot, { backgroundColor: s.fg, opacity: 0.8 }]} />}
+      <Text style={[styles.label, { color: s.fg }]}>{children ?? kind}</Text>
     </View>
   );
 }

@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Check, ChevronRight } from 'lucide-react-native';
@@ -16,9 +10,7 @@ import { SEED_NOTIFS, NotifItem } from '@/data/mock';
 export default function NotifScreen() {
   const [items, setItems] = useState<NotifItem[]>(SEED_NOTIFS);
   const [tab, setTab] = useState<'all' | 'unread'>('all');
-  const [swapDecision, setSwapDecision] = useState<'accept' | 'reject' | null>(
-    null
-  );
+  const [swapDecision, setSwapDecision] = useState<'accept' | 'reject' | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const unreadCount = items.filter((i) => !i.read).length;
@@ -34,9 +26,7 @@ export default function NotifScreen() {
   const decideSwap = (decision: 'accept' | 'reject') => {
     setSwapDecision(decision);
     markRead(2);
-    setToast(
-      decision === 'accept' ? 'Request disetujui · menunggu ketua' : 'Request ditolak'
-    );
+    setToast(decision === 'accept' ? 'Request disetujui · menunggu ketua' : 'Request ditolak');
   };
 
   return (
@@ -44,17 +34,8 @@ export default function NotifScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Notifikasi</Text>
-        <Pressable
-          onPress={markAllRead}
-          disabled={unreadCount === 0}
-          hitSlop={6}
-        >
-          <Text
-            style={[
-              styles.markAll,
-              unreadCount === 0 && { color: colors.textDisabled },
-            ]}
-          >
+        <Pressable onPress={markAllRead} disabled={unreadCount === 0} hitSlop={6}>
+          <Text style={[styles.markAll, unreadCount === 0 && { color: colors.textDisabled }]}>
             Tandai semua dibaca
           </Text>
         </Pressable>
@@ -83,9 +64,7 @@ export default function NotifScreen() {
               <Check size={26} color={colors.success} strokeWidth={3} />
             </View>
             <Text style={styles.emptyTitle}>Inbox bersih</Text>
-            <Text style={styles.emptyDesc}>
-              Tidak ada notifikasi yang belum dibaca
-            </Text>
+            <Text style={styles.emptyDesc}>Tidak ada notifikasi yang belum dibaca</Text>
           </View>
         ) : (
           <View style={{ gap: 6, paddingTop: 6 }}>
@@ -124,37 +103,17 @@ function TabBtn({
 }) {
   return (
     <Pressable onPress={onPress} style={styles.tabBtn}>
-      <Text
-        style={[
-          styles.tabLabel,
-          active && { color: colors.primary, fontFamily: fonts.bold },
-        ]}
-      >
+      <Text style={[styles.tabLabel, active && { color: colors.primary, fontFamily: fonts.bold }]}>
         {label}
       </Text>
       {typeof count === 'number' && (
-        <View
-          style={[
-            styles.countPill,
-            { backgroundColor: active ? colors.primary : '#E0DED6' },
-          ]}
-        >
-          <Text
-            style={[
-              styles.countPillText,
-              { color: active ? '#FFF' : colors.textMuted },
-            ]}
-          >
+        <View style={[styles.countPill, { backgroundColor: active ? colors.primary : '#E0DED6' }]}>
+          <Text style={[styles.countPillText, { color: active ? '#FFF' : colors.textMuted }]}>
             {count}
           </Text>
         </View>
       )}
-      <View
-        style={[
-          styles.tabUnderline,
-          active && { backgroundColor: colors.primary },
-        ]}
-      />
+      <View style={[styles.tabUnderline, active && { backgroundColor: colors.primary }]} />
     </Pressable>
   );
 }
@@ -193,23 +152,14 @@ function NotifCard({
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.notifTopRow}>
           <Text
-            style={[
-              styles.notifTitle,
-              !n.read && { fontFamily: fonts.bold },
-            ]}
+            style={[styles.notifTitle, !n.read && { fontFamily: fonts.bold }]}
             numberOfLines={2}
           >
             {n.title}
           </Text>
           <Text style={styles.notifTime}>{n.time}</Text>
         </View>
-        <Text
-          style={[
-            styles.notifBody,
-            !n.read && { color: '#3A3A36' },
-          ]}
-          numberOfLines={2}
-        >
+        <Text style={[styles.notifBody, !n.read && { color: '#3A3A36' }]} numberOfLines={2}>
           {n.body}
         </Text>
 
@@ -228,17 +178,13 @@ function NotifCard({
                   onPress={() => onSwapDecide('reject')}
                   style={[styles.swapBtn, styles.swapBtnGhost]}
                 >
-                  <Text style={[styles.swapBtnLabel, { color: colors.danger }]}>
-                    Tolak
-                  </Text>
+                  <Text style={[styles.swapBtnLabel, { color: colors.danger }]}>Tolak</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => onSwapDecide('accept')}
                   style={[styles.swapBtn, styles.swapBtnPrimary]}
                 >
-                  <Text style={[styles.swapBtnLabel, { color: '#FFF' }]}>
-                    Setujui
-                  </Text>
+                  <Text style={[styles.swapBtnLabel, { color: '#FFF' }]}>Setujui</Text>
                 </Pressable>
               </View>
             ) : (
@@ -254,10 +200,7 @@ function NotifCard({
                   style={[
                     styles.statusPillText,
                     {
-                      color:
-                        swapDecision === 'accept'
-                          ? colors.successInk
-                          : colors.danger,
+                      color: swapDecision === 'accept' ? colors.successInk : colors.danger,
                     },
                   ]}
                 >

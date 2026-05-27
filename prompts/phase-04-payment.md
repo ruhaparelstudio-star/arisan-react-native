@@ -43,10 +43,10 @@ Tambah di [functions/shared/types.ts](../functions/shared/types.ts):
 
 ```ts
 export type Period = {
-  periodeId: string;          // "1", "2", ... (string padded supaya sortable, atau number)
-  nomor: number;              // 1..jumlahPeriode
-  jatuhTempo: number;         // epoch ms UTC — kapan terakhir bayar
-  pemenangId?: string;        // diisi setelah undian
+  periodeId: string; // "1", "2", ... (string padded supaya sortable, atau number)
+  nomor: number; // 1..jumlahPeriode
+  jatuhTempo: number; // epoch ms UTC — kapan terakhir bayar
+  pemenangId?: string; // diisi setelah undian
   tanggalPelaksanaan?: number;
   status: 'open' | 'closed';
 };
@@ -54,8 +54,8 @@ export type Period = {
 export type Payment = {
   userId: string;
   status: 'belum' | 'lunas' | 'terlambat';
-  paidAt?: number;            // epoch ms
-  confirmedBy?: string;       // ketua userId
+  paidAt?: number; // epoch ms
+  confirmedBy?: string; // ketua userId
 };
 ```
 
@@ -72,52 +72,52 @@ import admin from 'firebase-admin';
 
 export const validatePayment = onCall(async (req) => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Wajib login');
-  
+
   const { groupId, periodeId, userId } = req.data ?? {};
   if (!groupId || !periodeId || !userId) {
     throw new HttpsError('invalid-argument', 'groupId, periodeId, userId wajib');
   }
-  
+
   const ketuaInfo = await assertKetua(req.auth.uid, groupId);
-  
+
   const paymentRef = db
-    .collection('groups').doc(groupId)
-    .collection('periods').doc(periodeId)
-    .collection('payments').doc(userId);
-  
+    .collection('groups')
+    .doc(groupId)
+    .collection('periods')
+    .doc(periodeId)
+    .collection('payments')
+    .doc(userId);
+
   const memberRef = db.collection('groups').doc(groupId).collection('members').doc(userId);
-  
+
   await db.runTransaction(async (tx) => {
     const [paymentSnap, memberSnap] = await Promise.all([tx.get(paymentRef), tx.get(memberRef)]);
-    
+
     if (!memberSnap.exists) {
       throw new HttpsError('not-found', 'Anggota tidak ditemukan di grup');
     }
-    
+
     if (paymentSnap.exists && paymentSnap.data()?.status === 'lunas') {
       throw new HttpsError('failed-precondition', 'Pembayaran sudah dikonfirmasi sebelumnya');
     }
-    
+
     tx.set(paymentRef, {
       userId,
       status: 'lunas',
       paidAt: admin.firestore.FieldValue.serverTimestamp(),
       confirmedBy: req.auth!.uid,
     });
-    
+
     // Activity log
-    tx.set(
-      db.collection('groups').doc(groupId).collection('activityLog').doc(),
-      {
-        type: 'payment_confirmed',
-        actorId: req.auth!.uid,
-        actorNama: ketuaInfo.nama,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        metadata: { periodeId, targetUserId: userId, targetNama: memberSnap.data()?.nama },
-      }
-    );
+    tx.set(db.collection('groups').doc(groupId).collection('activityLog').doc(), {
+      type: 'payment_confirmed',
+      actorId: req.auth!.uid,
+      actorNama: ketuaInfo.nama,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      metadata: { periodeId, targetUserId: userId, targetNama: memberSnap.data()?.nama },
+    });
   });
-  
+
   // Notif ke yang dikonfirmasi (di luar transaction)
   const memberData = (await memberRef.get()).data();
   const userDoc = await db.collection('users').doc(userId).get();
@@ -131,7 +131,7 @@ export const validatePayment = onCall(async (req) => {
       dedupKey: `payment-confirmed_${userId}_${periodeId}`,
     });
   }
-  
+
   return { ok: true };
 });
 ```
@@ -145,10 +145,8 @@ import { HttpsError } from 'firebase-functions/v2/https';
 import { db } from './firestore';
 
 export async function assertKetua(uid: string, groupId: string) {
-  const memberDoc = await db
-    .collection('groups').doc(groupId)
-    .collection('members').doc(uid).get();
-  
+  const memberDoc = await db.collection('groups').doc(groupId).collection('members').doc(uid).get();
+
   if (!memberDoc.exists || memberDoc.data()?.role !== 'ketua') {
     throw new HttpsError('permission-denied', 'Hanya ketua yang bisa melakukan aksi ini');
   }
@@ -156,10 +154,8 @@ export async function assertKetua(uid: string, groupId: string) {
 }
 
 export async function assertMember(uid: string, groupId: string) {
-  const memberDoc = await db
-    .collection('groups').doc(groupId)
-    .collection('members').doc(uid).get();
-  
+  const memberDoc = await db.collection('groups').doc(groupId).collection('members').doc(uid).get();
+
   if (!memberDoc.exists) {
     throw new HttpsError('permission-denied', 'Bukan anggota grup ini');
   }
@@ -180,7 +176,7 @@ export async function sendNotif(args: {
   title: string;
   body: string;
   data?: Record<string, any>;
-  dedupKey: string;  // mis. "payment-reminder_userId_2026-05-27"
+  dedupKey: string; // mis. "payment-reminder_userId_2026-05-27"
 }) {
   // Dedup check — TTL 24h
   const dedupRef = db.collection('notifLog').doc(args.dedupKey);
@@ -189,11 +185,11 @@ export async function sendNotif(args: {
     const sentAt = dedupSnap.data()?.sentAt?.toMillis?.() ?? 0;
     if (Date.now() - sentAt < 24 * 60 * 60 * 1000) return { skipped: 'duplicate' };
   }
-  
+
   const res = await fetch(EXPO_PUSH_URL, {
     method: 'POST',
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Accept-encoding': 'gzip, deflate',
       'Content-Type': 'application/json',
     },
@@ -206,9 +202,9 @@ export async function sendNotif(args: {
       priority: 'high',
     }),
   });
-  
+
   await dedupRef.set({ sentAt: admin.firestore.FieldValue.serverTimestamp() });
-  
+
   if (!res.ok) {
     console.error('Expo push failed', await res.text());
   }
@@ -256,51 +252,58 @@ export const sendPaymentReminder = onSchedule(
   { schedule: '0 8 * * *', timeZone: TZ, region: 'asia-southeast2' },
   async () => {
     const now = dayjs().tz(TZ);
-    
+
     // Cari semua periode active dengan jatuh tempo H-3, H-1, atau H+0
     const targetDays = [3, 1, 0];
-    
+
     for (const offset of targetDays) {
       const targetStart = now.add(offset, 'day').startOf('day').valueOf();
       const targetEnd = now.add(offset, 'day').endOf('day').valueOf();
-      
-      const periodSnap = await db.collectionGroup('periods')
+
+      const periodSnap = await db
+        .collectionGroup('periods')
         .where('status', '==', 'open')
         .where('jatuhTempo', '>=', targetStart)
         .where('jatuhTempo', '<=', targetEnd)
         .get();
-      
+
       for (const periodDoc of periodSnap.docs) {
         const groupRef = periodDoc.ref.parent.parent!;
         const periodeNomor = periodDoc.data().nomor;
-        
+
         // Get all members yang belum bayar
         const members = await groupRef.collection('members').get();
         const payments = await periodDoc.ref.collection('payments').get();
-        const paidUserIds = new Set(payments.docs.filter(p => p.data().status === 'lunas').map(p => p.id));
-        
+        const paidUserIds = new Set(
+          payments.docs.filter((p) => p.data().status === 'lunas').map((p) => p.id),
+        );
+
         for (const memberDoc of members.docs) {
           if (paidUserIds.has(memberDoc.id)) continue;
           const userDoc = await db.collection('users').doc(memberDoc.id).get();
           const token = userDoc.data()?.expoPushToken;
           if (!token) continue;
-          
+
           const label = offset === 0 ? 'hari ini' : `${offset} hari lagi`;
           await sendNotif({
             token,
             title: 'Reminder iuran arisan',
             body: `Iuran periode ${periodeNomor} jatuh tempo ${label}`,
-            data: { type: 'payment-reminder', route: `arisan://group/${groupRef.id}?tab=pembayaran` },
+            data: {
+              type: 'payment-reminder',
+              route: `arisan://group/${groupRef.id}?tab=pembayaran`,
+            },
             dedupKey: `payment-reminder_${memberDoc.id}_${periodDoc.id}_H-${offset}_${now.format('YYYY-MM-DD')}`,
           });
         }
       }
     }
-  }
+  },
 );
 ```
 
 **Index requirement:** `collectionGroup('periods') where status == 'open' and jatuhTempo range` — tambah ke [firestore.indexes.json](../firestore.indexes.json):
+
 ```json
 {
   "collectionGroup": "periods",
@@ -327,31 +330,35 @@ export const markLatePayments = onSchedule(
   async () => {
     // H+3 dari jatuh tempo dan belum lunas → mark "terlambat"
     const threshold = dayjs().subtract(3, 'day').valueOf();
-    
-    const overdueSnap = await db.collectionGroup('periods')
+
+    const overdueSnap = await db
+      .collectionGroup('periods')
       .where('status', '==', 'open')
       .where('jatuhTempo', '<', threshold)
       .get();
-    
+
     for (const periodDoc of overdueSnap.docs) {
       const groupRef = periodDoc.ref.parent.parent!;
       const members = await groupRef.collection('members').get();
-      
+
       for (const m of members.docs) {
         const paymentRef = periodDoc.ref.collection('payments').doc(m.id);
         const paymentSnap = await paymentRef.get();
         const currentStatus = paymentSnap.data()?.status;
-        
+
         if (currentStatus === 'lunas' || currentStatus === 'terlambat') continue;
-        
-        await paymentRef.set({
-          userId: m.id,
-          status: 'terlambat',
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
+
+        await paymentRef.set(
+          {
+            userId: m.id,
+            status: 'terlambat',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
       }
     }
-  }
+  },
 );
 ```
 
@@ -367,7 +374,7 @@ Update [firestore.rules](../firestore.rules):
 match /groups/{groupId}/periods/{periodeId} {
   allow read: if request.auth != null && isMember(groupId);
   allow write: if false;
-  
+
   match /payments/{userId} {
     allow read: if request.auth != null && isMember(groupId);
     allow write: if false;  // ONLY Cloud Function validatePayment
@@ -382,6 +389,7 @@ Deploy rules.
 Major refactor — pisahkan jadi komponen `PembayaranTab` di [src/screens/PembayaranTab.tsx](../src/screens/PembayaranTab.tsx).
 
 Spec:
+
 - **Period picker** di atas (chip horizontal scroll, current periode highlighted)
 - **Progress card** — derive dari real-time payments: collected = sum(lunas) × nominal, target = totalAnggota × nominal
 - **Member list** — subscribe ke `groups/{groupId}/periods/{periodeId}/payments` + `groups/{groupId}/members`
@@ -391,12 +399,15 @@ Spec:
 - **Hapus** tombol blanket "Konfirmasi Pembayaran" di sticky bottom — diganti per-anggota di atas
 
 Konfirmasi flow:
+
 ```ts
 const confirmPayment = async (userId: string) => {
   setLoading(true);
   try {
     await functions('asia-southeast2').httpsCallable('validatePayment')({
-      groupId, periodeId, userId
+      groupId,
+      periodeId,
+      userId,
     });
     // onSnapshot akan auto-update UI, tidak perlu refetch
   } catch (e: any) {
@@ -409,7 +420,7 @@ const confirmPayment = async (userId: string) => {
 
 ### Task 9 — Notif handler deep link untuk `payment-confirmed` & `payment-reminder`
 
-Update [app/_layout.tsx](../app/_layout.tsx) — handle `Notifications.addNotificationResponseReceivedListener`:
+Update [app/\_layout.tsx](../app/_layout.tsx) — handle `Notifications.addNotificationResponseReceivedListener`:
 
 ```ts
 useEffect(() => {
