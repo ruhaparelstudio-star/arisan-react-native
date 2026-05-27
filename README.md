@@ -53,6 +53,7 @@ npx expo start
 ```
 
 Lalu scan QR code dengan **Expo Go** di HP, atau tekan:
+
 - `i` untuk iOS simulator
 - `a` untuk Android emulator
 - `w` untuk web
@@ -92,4 +93,5 @@ Lihat `src/theme/colors.ts` untuk warna dan `src/theme/typography.ts` untuk scal
 - Danger `#993C1D` + bg `#FAECE7`
 - Page `#F8F8F8`, Card `#FFFFFF`, Text `#1F1F1D`
 - Inter font, scale H1=24 / H2=20 / H3=17 / Body=15 / Caption=13
+
 # arisan-react-native

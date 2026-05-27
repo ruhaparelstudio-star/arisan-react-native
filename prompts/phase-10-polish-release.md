@@ -43,22 +43,24 @@ Final push: (1) Detox E2E tests untuk 5 core flows, (2) EAS Build preview APK + 
 
 Sesuai [CLAUDE.md §25.1](../CLAUDE.md#25-app-assets--deep-links):
 
-| Asset | Status | Action |
-|-------|--------|--------|
-| `assets/icon.png` 1024×1024 | Cek existing | Kalau placeholder, minta user provide final |
-| `assets/adaptive-icon.png` 1024×1024 | Cek existing | Foreground untuk Android adaptive icon |
-| `assets/splash.png` 1242×2436 | Cek existing | Splash dengan brand ungu |
-| `assets/notification-icon.png` 96×96 white | Cek | Wajib monochrome PNG putih |
-| `store/play-feature.png` 1024×500 | BUAT | Banner Play Store |
-| `store/play-screenshots/` | BUAT | Min 2, max 8 screenshot Android |
-| `store/ios-screenshots/` | BUAT | Per device 6.7", 6.5", 5.5" |
+| Asset                                      | Status       | Action                                      |
+| ------------------------------------------ | ------------ | ------------------------------------------- |
+| `assets/icon.png` 1024×1024                | Cek existing | Kalau placeholder, minta user provide final |
+| `assets/adaptive-icon.png` 1024×1024       | Cek existing | Foreground untuk Android adaptive icon      |
+| `assets/splash.png` 1242×2436              | Cek existing | Splash dengan brand ungu                    |
+| `assets/notification-icon.png` 96×96 white | Cek          | Wajib monochrome PNG putih                  |
+| `store/play-feature.png` 1024×500          | BUAT         | Banner Play Store                           |
+| `store/play-screenshots/`                  | BUAT         | Min 2, max 8 screenshot Android             |
+| `store/ios-screenshots/`                   | BUAT         | Per device 6.7", 6.5", 5.5"                 |
 
 **Cara screenshot Android:**
+
 ```bash
 adb shell screencap -p /sdcard/screen.png && adb pull /sdcard/screen.png ./store/play-screenshots/
 ```
 
 **Cara screenshot iOS Simulator:**
+
 - Cmd+S di iOS Simulator → save to Desktop
 
 Screenshot core flows: Beranda (dashboard list grup), Detail grup (tab pembayaran), Urutan giliran, Chat, Notif center.
@@ -68,6 +70,7 @@ Screenshot core flows: Beranda (dashboard list grup), Detail grup (tab pembayara
 Privacy Policy URL diperlukan untuk Play Console + App Store Connect (cannot be in-app only).
 
 Option A: **GitHub Pages** (gratis):
+
 - Buat repo public `arisan-app-legal`
 - File `privacy.html` (copy text dari [app/legal/privacy.tsx](../app/legal/privacy.tsx) jadi HTML semantic)
 - File `tos.html`
@@ -85,6 +88,7 @@ npx detox init -r jest
 ```
 
 Update [eas.json](../eas.json) tambah profile `e2e`:
+
 ```json
 "e2e": {
   "developmentClient": true,
@@ -94,12 +98,14 @@ Update [eas.json](../eas.json) tambah profile `e2e`:
 ```
 
 Build E2E APK:
+
 ```bash
 eas build --profile e2e --platform android --local
 # Output: ~/Library/.../arisan-e2e.apk
 ```
 
 Update `.detoxrc.js`:
+
 ```js
 module.exports = {
   testRunner: { args: { $0: 'jest', config: 'e2e/jest.config.js' } },
@@ -127,26 +133,32 @@ describe('Register flow', () => {
   beforeAll(async () => {
     await device.launchApp({ newInstance: true, permissions: { notifications: 'YES' } });
   });
-  
+
   it('register → OTP → consent → beranda', async () => {
     await element(by.id('phone-input')).typeText('81200000001');
     await element(by.id('btn-send-otp')).tap();
-    await waitFor(element(by.id('otp-input-0'))).toBeVisible().withTimeout(5000);
-    
+    await waitFor(element(by.id('otp-input-0')))
+      .toBeVisible()
+      .withTimeout(5000);
+
     // Type 6 digit OTP
     for (let i = 0; i < 6; i++) {
       await element(by.id(`otp-input-${i}`)).typeText('123456'[i]);
     }
     await element(by.id('btn-verify-otp')).tap();
-    
+
     // Consent
-    await waitFor(element(by.id('consent-checkbox'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('consent-checkbox')))
+      .toBeVisible()
+      .withTimeout(5000);
     await element(by.id('nama-input')).typeText('Test User E2E');
     await element(by.id('consent-checkbox')).tap();
     await element(by.id('btn-consent-continue')).tap();
-    
+
     // Beranda
-    await waitFor(element(by.id('beranda-greeting'))).toBeVisible().withTimeout(5000);
+    await waitFor(element(by.id('beranda-greeting')))
+      .toBeVisible()
+      .withTimeout(5000);
   });
 });
 ```
@@ -175,15 +187,18 @@ eas build --profile preview --platform ios           # TestFlight IPA
 Wait time: ~15-25 menit per platform.
 
 **Android APK distribution:**
+
 - Download APK dari EAS dashboard
 - Upload ke Google Drive folder, share link untuk 10 beta grup
 - ATAU upload ke Play Console "Internal Testing" track (lebih clean, terkait dengan user akun Google)
 
 **iOS TestFlight:**
+
 - `eas submit --profile preview --platform ios` → upload ke App Store Connect
 - Add beta testers via email di TestFlight tab → mereka install via TestFlight app
 
 Test di:
+
 - **Android min 3 device fisik**: low-end (RAM 2-3GB Android 8), mid (Android 12), high (Android 14+)
 - **iOS min 2 device fisik**: iPhone iOS 13 (floor), iPhone iOS latest
 
@@ -249,11 +264,13 @@ Manual steps user:
 ### Task 8 — GCP Budget alerts
 
 Setup di GCP Console untuk kedua project (`arisan-dev` & `arisan-prod`):
+
 - 50% threshold → email tim
 - 90% threshold → email + Slack webhook (jika ada)
 - 100% threshold → email + auto-disable billing (dev only — prod jangan, biar service tidak down)
 
 Budget: konfirmasi user. Default suggestion:
+
 - `arisan-dev`: $20/bulan (cukup untuk dev + closed beta 10 grup)
 - `arisan-prod`: $100/bulan (estimasi 500 user awal)
 
@@ -273,6 +290,7 @@ Budget: konfirmasi user. Default suggestion:
 Durasi beta: **2 minggu = 1 siklus periode arisan minimum** (PRD §16.3).
 
 Exit criteria (PRD §16.3):
+
 - Zero P0/P1 bug
 - Crash rate < 1%
 - 8/10 grup completion siklus
@@ -410,6 +428,7 @@ Refs: CLAUDE.md §27 Week 10, §19 Production Readiness
 ## 🎉 Post-launch
 
 Setelah app live di store:
+
 1. Update CLAUDE.md §1 Status — ganti "UI shell" jadi "Production v1.0.0"
 2. Clean up CLAUDE.md §1.5 gap list — semua sudah dibereskan
 3. Archive [src/data/mock.ts](../src/data/mock.ts) — sudah tidak dipakai

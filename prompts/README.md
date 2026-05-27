@@ -19,18 +19,18 @@
 
 ## Index phase
 
-| # | File | Topik | Output utama | Est durasi |
-|---|------|-------|--------------|------------|
-| 1 | [phase-01-setup.md](phase-01-setup.md) | Setup & Fondasi | Firebase init, RNFirebase, dev client, ESLint, CI, functions scaffold | 1 minggu |
-| 2 | [phase-02-auth.md](phase-02-auth.md) | Auth Flow + OTP | Splash → HP input → OTP → consent. `rateLimitOTP` function | 1 minggu |
-| 3 | [phase-03-group.md](phase-03-group.md) | Group Management | Buat grup, invite, join via kode/link. Dashboard wired | 1 minggu |
-| 4 | [phase-04-payment.md](phase-04-payment.md) | Tracking Pembayaran | `validatePayment`, period picker, scheduler reminder | 1 minggu |
-| 5 | [phase-05-undian.md](phase-05-undian.md) | Sistem Undian | Fix §1.5 mismatch #1, #2, #4. Server-side random. Mode 1 vs 3 | 1 minggu |
-| 6 | [phase-06-tanggal.md](phase-06-tanggal.md) | Set Tanggal Pelaksanaan | Refactor set-date.tsx, scheduler reminders, ketua override | 1 minggu |
-| 7 | [phase-07-swap-chat.md](phase-07-swap-chat.md) | Tukar Giliran + Chat | Fix limit 2×, Layer 2 screen, inverted FlatList + pagination | 1 minggu |
-| 8 | [phase-08-activity-test.md](phase-08-activity-test.md) | Activity Log + Unit Test | Wire riwayat, Jest setup, test cases PRD §8.1 | 1 minggu |
-| 9 | [phase-09-security-legal.md](phase-09-security-legal.md) | Security & Legal | Rules 100% coverage, Privacy/ToS, Delete Account, Crashlytics, Analytics | 1 minggu |
-| 10 | [phase-10-polish-release.md](phase-10-polish-release.md) | Polish & Build | Detox E2E, EAS build APK + TestFlight, store listing, closed beta | 1 minggu |
+| #   | File                                                     | Topik                    | Output utama                                                             | Est durasi |
+| --- | -------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------ | ---------- |
+| 1   | [phase-01-setup.md](phase-01-setup.md)                   | Setup & Fondasi          | Firebase init, RNFirebase, dev client, ESLint, CI, functions scaffold    | 1 minggu   |
+| 2   | [phase-02-auth.md](phase-02-auth.md)                     | Auth Flow + OTP          | Splash → HP input → OTP → consent. `rateLimitOTP` function               | 1 minggu   |
+| 3   | [phase-03-group.md](phase-03-group.md)                   | Group Management         | Buat grup, invite, join via kode/link. Dashboard wired                   | 1 minggu   |
+| 4   | [phase-04-payment.md](phase-04-payment.md)               | Tracking Pembayaran      | `validatePayment`, period picker, scheduler reminder                     | 1 minggu   |
+| 5   | [phase-05-undian.md](phase-05-undian.md)                 | Sistem Undian            | Fix §1.5 mismatch #1, #2, #4. Server-side random. Mode 1 vs 3            | 1 minggu   |
+| 6   | [phase-06-tanggal.md](phase-06-tanggal.md)               | Set Tanggal Pelaksanaan  | Refactor set-date.tsx, scheduler reminders, ketua override               | 1 minggu   |
+| 7   | [phase-07-swap-chat.md](phase-07-swap-chat.md)           | Tukar Giliran + Chat     | Fix limit 2×, Layer 2 screen, inverted FlatList + pagination             | 1 minggu   |
+| 8   | [phase-08-activity-test.md](phase-08-activity-test.md)   | Activity Log + Unit Test | Wire riwayat, Jest setup, test cases PRD §8.1                            | 1 minggu   |
+| 9   | [phase-09-security-legal.md](phase-09-security-legal.md) | Security & Legal         | Rules 100% coverage, Privacy/ToS, Delete Account, Crashlytics, Analytics | 1 minggu   |
+| 10  | [phase-10-polish-release.md](phase-10-polish-release.md) | Polish & Build           | Detox E2E, EAS build APK + TestFlight, store listing, closed beta        | 1 minggu   |
 
 ## Konvensi prompt
 
@@ -51,6 +51,7 @@ Tiap file phase mengikuti struktur:
 ## Verifikasi dari Claude (anti-hallucination guardrails)
 
 Setiap prompt mengandung instruksi:
+
 - **Read first, write after** — Claude wajib baca file existing sebelum modifikasi
 - **Reference exact paths** — semua file path sudah diverifikasi ada di repo per Mei 2026
 - **Reference exact package names** — tidak ada package fiktif

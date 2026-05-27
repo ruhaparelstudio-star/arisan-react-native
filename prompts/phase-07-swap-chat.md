@@ -46,14 +46,19 @@ Update [functions/shared/types.ts](../functions/shared/types.ts):
 export type SwapRequest = {
   requestId: string;
   groupId: string;
-  fromUserId: string;       // pengaju
+  fromUserId: string; // pengaju
   fromNama: string;
-  fromPeriode: number;      // giliran asal pengaju
-  toUserId: string;         // target tukar
+  fromPeriode: number; // giliran asal pengaju
+  toUserId: string; // target tukar
   toNama: string;
-  toPeriode: number;        // giliran target (akan jadi milik pengaju)
+  toPeriode: number; // giliran target (akan jadi milik pengaju)
   alasan?: string;
-  status: 'pending_target' | 'target_approved' | 'rejected_by_target' | 'ketua_approved' | 'rejected_by_ketua';
+  status:
+    | 'pending_target'
+    | 'target_approved'
+    | 'rejected_by_target'
+    | 'ketua_approved'
+    | 'rejected_by_ketua';
   createdAt: number;
   targetActedAt?: number;
   ketuaActedAt?: number;
@@ -64,9 +69,9 @@ export type Message = {
   groupId: string;
   kind: 'msg' | 'system';
   text: string;
-  authorId?: string;         // null untuk system
+  authorId?: string; // null untuk system
   authorNama?: string;
-  authorRole?: 'ketua' | 'anggota';  // snapshot saat kirim
+  authorRole?: 'ketua' | 'anggota'; // snapshot saat kirim
   createdAt: number;
 };
 ```
@@ -86,7 +91,7 @@ const MAX_SWAP_PER_MEMBER = 2;
 
 export const requestSwap = onCall(async (req) => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Wajib login');
-  
+
   const { groupId, toUserId, alasan } = req.data ?? {};
   if (!groupId || !toUserId) {
     throw new HttpsError('invalid-argument', 'groupId & toUserId wajib');
@@ -94,40 +99,50 @@ export const requestSwap = onCall(async (req) => {
   if (toUserId === req.auth.uid) {
     throw new HttpsError('invalid-argument', 'Tidak bisa tukar dengan diri sendiri');
   }
-  
+
   const fromMember = await assertMember(req.auth.uid, groupId);
   const toMember = await assertMember(toUserId, groupId);
-  
+
   // Cek limit
   if ((fromMember.jumlahTukar ?? 0) >= MAX_SWAP_PER_MEMBER) {
-    throw new HttpsError('failed-precondition', `Sudah mencapai limit ${MAX_SWAP_PER_MEMBER}× tukar`);
+    throw new HttpsError(
+      'failed-precondition',
+      `Sudah mencapai limit ${MAX_SWAP_PER_MEMBER}× tukar`,
+    );
   }
-  
+
   // Cek belum menang (PRD: hanya yang belum menang yang eligible swap)
   if (fromMember.sudahMenang || toMember.sudahMenang) {
     throw new HttpsError('failed-precondition', 'Tidak bisa tukar — salah satu sudah menang');
   }
-  
+
   // Cek tidak ada pending request aktif dari user yang sama
-  const existing = await db.collection('groups').doc(groupId)
+  const existing = await db
+    .collection('groups')
+    .doc(groupId)
     .collection('swapRequests')
     .where('fromUserId', '==', req.auth.uid)
     .where('status', 'in', ['pending_target', 'target_approved'])
-    .limit(1).get();
+    .limit(1)
+    .get();
   if (!existing.empty) {
     throw new HttpsError('failed-precondition', 'Masih ada request tukar yang pending');
   }
-  
+
   const reqRef = db.collection('groups').doc(groupId).collection('swapRequests').doc();
   await reqRef.set({
     groupId,
-    fromUserId: req.auth.uid, fromNama: fromMember.nama, fromPeriode: fromMember.giliran,
-    toUserId, toNama: toMember.nama, toPeriode: toMember.giliran,
+    fromUserId: req.auth.uid,
+    fromNama: fromMember.nama,
+    fromPeriode: fromMember.giliran,
+    toUserId,
+    toNama: toMember.nama,
+    toPeriode: toMember.giliran,
     alasan: alasan?.trim() || null,
     status: 'pending_target',
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
-  
+
   // Notif ke target
   const targetUserDoc = await db.collection('users').doc(toUserId).get();
   const token = targetUserDoc.data()?.expoPushToken;
@@ -136,11 +151,14 @@ export const requestSwap = onCall(async (req) => {
       token,
       title: 'Request tukar giliran',
       body: `${fromMember.nama} ingin tukar giliran #${fromMember.giliran} dengan giliran #${toMember.giliran} kamu`,
-      data: { type: 'swap-request', route: `arisan://approval?requestId=${reqRef.id}&groupId=${groupId}` },
+      data: {
+        type: 'swap-request',
+        route: `arisan://approval?requestId=${reqRef.id}&groupId=${groupId}`,
+      },
       dedupKey: `swap_request_${reqRef.id}`,
     });
   }
-  
+
   return { requestId: reqRef.id };
 });
 ```
@@ -161,9 +179,9 @@ export const respondSwapTarget = onCall(async (req) => {
   if (!groupId || !requestId || typeof approve !== 'boolean') {
     throw new HttpsError('invalid-argument', 'groupId, requestId, approve wajib');
   }
-  
+
   const reqRef = db.collection('groups').doc(groupId).collection('swapRequests').doc(requestId);
-  
+
   const updated = await db.runTransaction(async (tx) => {
     const snap = await tx.get(reqRef);
     if (!snap.exists) throw new HttpsError('not-found', 'Request tidak ditemukan');
@@ -174,7 +192,7 @@ export const respondSwapTarget = onCall(async (req) => {
     if (data.status !== 'pending_target') {
       throw new HttpsError('failed-precondition', 'Request sudah direspons');
     }
-    
+
     const newStatus = approve ? 'target_approved' : 'rejected_by_target';
     tx.update(reqRef, {
       status: newStatus,
@@ -182,11 +200,11 @@ export const respondSwapTarget = onCall(async (req) => {
     });
     return { ...data, status: newStatus };
   });
-  
+
   // Notif ketua (jika approved) atau pengaju (jika rejected)
   const groupSnap = await db.collection('groups').doc(groupId).get();
   const ketuaId = groupSnap.data()?.ketuaId;
-  
+
   if (approve && ketuaId) {
     const userDoc = await db.collection('users').doc(ketuaId).get();
     const token = userDoc.data()?.expoPushToken;
@@ -195,7 +213,10 @@ export const respondSwapTarget = onCall(async (req) => {
         token,
         title: 'Approval tukar menunggu',
         body: `${updated.fromNama} ↔ ${updated.toNama}. Tap untuk review.`,
-        data: { type: 'swap-target-approved', route: `arisan://approval?requestId=${requestId}&groupId=${groupId}&forKetua=true` },
+        data: {
+          type: 'swap-target-approved',
+          route: `arisan://approval?requestId=${requestId}&groupId=${groupId}&forKetua=true`,
+        },
         dedupKey: `swap_target_approved_${requestId}`,
       });
     }
@@ -212,7 +233,7 @@ export const respondSwapTarget = onCall(async (req) => {
       });
     }
   }
-  
+
   return { ok: true, status: updated.status };
 });
 ```
@@ -234,10 +255,10 @@ export const approveSwap = onCall(async (req) => {
   if (!groupId || !requestId || typeof approve !== 'boolean') {
     throw new HttpsError('invalid-argument', 'groupId, requestId, approve wajib');
   }
-  
+
   const ketua = await assertKetua(req.auth.uid, groupId);
   const reqRef = db.collection('groups').doc(groupId).collection('swapRequests').doc(requestId);
-  
+
   const result = await db.runTransaction(async (tx) => {
     const reqSnap = await tx.get(reqRef);
     if (!reqSnap.exists) throw new HttpsError('not-found', 'Request tidak ditemukan');
@@ -245,22 +266,26 @@ export const approveSwap = onCall(async (req) => {
     if (r.status !== 'target_approved') {
       throw new HttpsError('failed-precondition', 'Target belum setuju atau status invalid');
     }
-    
+
     const now = admin.firestore.FieldValue.serverTimestamp();
-    
+
     if (!approve) {
       tx.update(reqRef, { status: 'rejected_by_ketua', ketuaActedAt: now });
       return { approved: false, request: r };
     }
-    
+
     // Atomic swap: swap `giliran` di kedua member docs + increment jumlahTukar masing-masing
-    const fromMemberRef = db.collection('groups').doc(groupId).collection('members').doc(r.fromUserId);
+    const fromMemberRef = db
+      .collection('groups')
+      .doc(groupId)
+      .collection('members')
+      .doc(r.fromUserId);
     const toMemberRef = db.collection('groups').doc(groupId).collection('members').doc(r.toUserId);
-    
+
     const [fromSnap, toSnap] = await Promise.all([tx.get(fromMemberRef), tx.get(toMemberRef)]);
     const fromCur = fromSnap.data()!;
     const toCur = toSnap.data()!;
-    
+
     // Final check di dalam transaction
     if (fromCur.sudahMenang || toCur.sudahMenang) {
       throw new HttpsError('failed-precondition', 'Salah satu sudah menang, tidak bisa swap');
@@ -268,7 +293,7 @@ export const approveSwap = onCall(async (req) => {
     if (fromCur.jumlahTukar >= 2 || toCur.jumlahTukar >= 2) {
       throw new HttpsError('failed-precondition', 'Limit 2× tukar sudah tercapai');
     }
-    
+
     tx.update(fromMemberRef, {
       giliran: toCur.giliran,
       jumlahTukar: fromCur.jumlahTukar + 1,
@@ -277,19 +302,26 @@ export const approveSwap = onCall(async (req) => {
       giliran: fromCur.giliran,
       jumlahTukar: toCur.jumlahTukar + 1,
     });
-    
+
     tx.update(reqRef, { status: 'ketua_approved', ketuaActedAt: now });
-    
+
     tx.set(db.collection('groups').doc(groupId).collection('activityLog').doc(), {
       type: 'swap_approved',
-      actorId: req.auth!.uid, actorNama: ketua.nama,
+      actorId: req.auth!.uid,
+      actorNama: ketua.nama,
       timestamp: now,
-      metadata: { requestId, from: r.fromNama, to: r.toNama, fromOldGiliran: fromCur.giliran, toOldGiliran: toCur.giliran },
+      metadata: {
+        requestId,
+        from: r.fromNama,
+        to: r.toNama,
+        fromOldGiliran: fromCur.giliran,
+        toOldGiliran: toCur.giliran,
+      },
     });
-    
+
     return { approved: true, request: r };
   });
-  
+
   // Notif semua anggota grup
   const membersSnap = await db.collection('groups').doc(groupId).collection('members').get();
   for (const m of membersSnap.docs) {
@@ -304,7 +336,7 @@ export const approveSwap = onCall(async (req) => {
       dedupKey: `swap_finalized_${requestId}_${m.id}`,
     });
   }
-  
+
   return { ok: true, approved: result.approved };
 });
 ```
@@ -321,7 +353,7 @@ match /groups/{groupId}/swapRequests/{requestId} {
 
 match /groups/{groupId}/messages/{messageId} {
   allow read: if request.auth != null && isMember(groupId);
-  allow create: if request.auth != null 
+  allow create: if request.auth != null
     && isMember(groupId)
     && request.resource.data.authorId == request.auth.uid
     && request.resource.data.kind == 'msg'
@@ -339,25 +371,30 @@ match /groups/{groupId}/messages/{messageId} {
 Line 46: `<Text style={styles.sisaText}>1× sisa</Text>`
 
 Ganti dengan dynamic:
+
 ```tsx
 // Load current user's jumlahTukar from Firestore
 const sisaTukar = 2 - (member?.jumlahTukar ?? 0);
 // ...
-<Text style={styles.sisaText}>{sisaTukar}× sisa</Text>
+<Text style={styles.sisaText}>{sisaTukar}× sisa</Text>;
 ```
 
 Disable form jika `sisaTukar === 0`. Replace seluruh SWAP_CANDIDATES mock dengan real query: `groups/{groupId}/members where sudahMenang == false and userId != currentUid`.
 
 Submit handler:
+
 ```ts
 await functions('asia-southeast2').httpsCallable('requestSwap')({
-  groupId, toUserId: pickedUserId, alasan: reason.trim() || null,
+  groupId,
+  toUserId: pickedUserId,
+  alasan: reason.trim() || null,
 });
 ```
 
 ### Task 7 — Wire [app/approval.tsx](../app/approval.tsx) (Layer 1 anggota target)
 
 Saat ini logic local state pakai `useState<Status>('pending')`. Wire ke real Firestore:
+
 - Receive `requestId`, `groupId` via params
 - Subscribe ke `groups/{groupId}/swapRequests/{requestId}`
 - Render UI sesuai data real (siapa pengaju, periode swap, alasan)
@@ -368,6 +405,7 @@ Saat ini logic local state pakai `useState<Status>('pending')`. Wire ke real Fir
 ### Task 8 — Buat screen Layer 2 (ketua approve final)
 
 Buat [app/grup/[id]/approve-swap.tsx](../app/grup/%5Bid%5D/approve-swap.tsx):
+
 - Receive `requestId`, `groupId` via params atau notif deep link `forKetua=true`
 - Verifikasi user adalah ketua (route guard)
 - Tampilkan info request (siapa↔siapa, periode lama→baru, alasan dari pengaju)
@@ -393,40 +431,44 @@ export function ChatTab({ groupId }: { groupId: string }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [oldestTimestamp, setOldestTimestamp] = useState<number | null>(null);
-  
+
   // Subscribe to latest 30
   useEffect(() => {
     const unsub = firestore()
-      .collection('groups').doc(groupId).collection('messages')
+      .collection('groups')
+      .doc(groupId)
+      .collection('messages')
       .orderBy('createdAt', 'desc')
       .limit(PAGE_SIZE)
       .onSnapshot((snap) => {
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Message);
         setMessages(list);
         if (list.length > 0) setOldestTimestamp(list[list.length - 1].createdAt);
       });
     return unsub;
   }, [groupId]);
-  
+
   const loadMore = async () => {
     if (loadingMore || !hasMore || !oldestTimestamp) return;
     setLoadingMore(true);
     const snap = await firestore()
-      .collection('groups').doc(groupId).collection('messages')
+      .collection('groups')
+      .doc(groupId)
+      .collection('messages')
       .orderBy('createdAt', 'desc')
       .startAfter(oldestTimestamp)
       .limit(PAGE_SIZE)
       .get();
-    
+
     if (snap.empty) setHasMore(false);
     else {
-      const older = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
-      setMessages(prev => [...prev, ...older]);
+      const older = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Message);
+      setMessages((prev) => [...prev, ...older]);
       setOldestTimestamp(older[older.length - 1].createdAt);
     }
     setLoadingMore(false);
   };
-  
+
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
     await firestore().collection('groups').doc(groupId).collection('messages').add({
@@ -434,11 +476,11 @@ export function ChatTab({ groupId }: { groupId: string }) {
       text: text.trim(),
       authorId: user.uid,
       authorNama: user.nama,
-      authorRole: myRole,  // 'ketua' | 'anggota'
+      authorRole: myRole, // 'ketua' | 'anggota'
       createdAt: firestore.FieldValue.serverTimestamp(),
     });
   };
-  
+
   return (
     <View style={{ flex: 1 }}>
       <FlatList
@@ -457,6 +499,7 @@ export function ChatTab({ groupId }: { groupId: string }) {
 ```
 
 Render `MessageBubble`:
+
 - `kind === 'system'` → centered text, italic
 - `kind === 'msg'` → bubble kiri/kanan tergantung `mine`, badge "KETUA" jika `authorRole === 'ketua'` dan `!mine`
 - Time format pakai dayjs (`HH:mm` for today, `D MMM` for older)
@@ -466,6 +509,7 @@ Render `MessageBubble`:
 Setiap Cloud Function yang sudah ada (`validatePayment`, `triggerUndian`, `setTanggalPelaksanaan`, `approveSwap`) — **tambah** write system message ke `groups/{groupId}/messages`:
 
 Helper [functions/src/lib/systemMessage.ts](../functions/src/lib/systemMessage.ts):
+
 ```ts
 import { db } from './firestore';
 import admin from 'firebase-admin';
@@ -480,6 +524,7 @@ export async function postSystemMessage(groupId: string, text: string) {
 ```
 
 Tambahkan call di akhir tiap aksi sukses (di luar transaction supaya tidak rollback bila gagal post):
+
 - `validatePayment`: `postSystemMessage(groupId, `${ketua.nama} mengkonfirmasi pembayaran ${memberNama} periode ${periodeId}`)`
 - `triggerUndian`: `postSystemMessage(groupId, `${winner.nama} memenangkan undian periode ${periodeId} 🎉`)`
 - `setTanggalPelaksanaan`: `postSystemMessage(groupId, `${member.nama} set pelaksanaan periode ${periodeId}: ${formatTanggal(tanggal)}`)`

@@ -8,10 +8,7 @@ import { colors, fonts, radii, shadows } from '@/theme';
 
 type Status = 'pending' | 'rejected' | 'approved-waiting';
 
-const STATUS_BADGE: Record<
-  Status,
-  { label: string; bg: string; fg: string; dot: string }
-> = {
+const STATUS_BADGE: Record<Status, { label: string; bg: string; fg: string; dot: string }> = {
   pending: {
     label: 'Request Tukar Giliran',
     bg: colors.primaryTint,
@@ -41,8 +38,8 @@ export default function ApprovalScreen() {
     status === 'pending'
       ? '#C7C2EE'
       : status === 'rejected'
-      ? colors.dangerBorder
-      : colors.warningBorder;
+        ? colors.dangerBorder
+        : colors.warningBorder;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -73,8 +70,7 @@ export default function ApprovalScreen() {
             <Avatar name="Rina Lestari" size={44} />
             <View style={{ flex: 1 }}>
               <Text style={styles.senderText}>
-                <Text style={{ fontFamily: fonts.bold }}>Rina Lestari</Text> ingin
-                bertukar giliran
+                <Text style={{ fontFamily: fonts.bold }}>Rina Lestari</Text> ingin bertukar giliran
               </Text>
               <Text style={styles.senderTime}>2 menit lalu</Text>
             </View>
@@ -103,9 +99,7 @@ export default function ApprovalScreen() {
           <View>
             <Text style={styles.reasonLabel}>Alasan dari Rina</Text>
             <View style={styles.quote}>
-              <Text style={styles.quoteText}>
-                "Ada keperluan mendadak di bulan Maret"
-              </Text>
+              <Text style={styles.quoteText}>"Ada keperluan mendadak di bulan Maret"</Text>
             </View>
           </View>
 
@@ -128,9 +122,7 @@ export default function ApprovalScreen() {
                   borderWidth: 1.5,
                 }}
                 onPress={() => setStatus('rejected')}
-                leading={
-                  <X size={16} color={colors.danger} strokeWidth={2.2} />
-                }
+                leading={<X size={16} color={colors.danger} strokeWidth={2.2} />}
               >
                 <Text style={{ fontFamily: fonts.bold, fontSize: 14, color: colors.danger }}>
                   Tolak
@@ -152,8 +144,7 @@ export default function ApprovalScreen() {
                 style={[
                   styles.statusIcon,
                   {
-                    backgroundColor:
-                      status === 'rejected' ? colors.dangerBg : colors.warningBg,
+                    backgroundColor: status === 'rejected' ? colors.dangerBg : colors.warningBg,
                   },
                 ]}
               >
@@ -169,14 +160,9 @@ export default function ApprovalScreen() {
                     ? 'Kamu menolak request ini'
                     : 'Kamu menyetujui · menunggu ketua'}
                 </Text>
-                <Text style={styles.statusSub}>
-                  Rina akan menerima notifikasi
-                </Text>
+                <Text style={styles.statusSub}>Rina akan menerima notifikasi</Text>
               </View>
-              <Pressable
-                onPress={() => setStatus('pending')}
-                style={styles.resetBtn}
-              >
+              <Pressable onPress={() => setStatus('pending')} style={styles.resetBtn}>
                 <Text style={styles.resetText}>Reset</Text>
               </Pressable>
             </View>

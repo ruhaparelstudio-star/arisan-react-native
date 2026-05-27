@@ -30,7 +30,7 @@ User dapat: (1) buat grup arisan dengan setup awal (nama, nominal, frekuensi, ju
    - §27 Week 3 checklist
 2. **PRD §4.2 F02** — spec lengkap manajemen grup
 3. **File existing**:
-   - [app/(tabs)/index.tsx](../app/(tabs)/index.tsx) — Beranda saat ini pakai `GROUPS` mock. FAB di line 99 `onPress={() => {}}` — kosong, perlu wire.
+   - [app/(tabs)/index.tsx](<../app/(tabs)/index.tsx>) — Beranda saat ini pakai `GROUPS` mock. FAB di line 99 `onPress={() => {}}` — kosong, perlu wire.
    - [src/data/mock.ts](../src/data/mock.ts) — `GROUPS` array, akan diganti Firestore query
    - [app/pengaturan.tsx](../app/pengaturan.tsx) — tombol "Tambah Anggota via Link" line ~106, perlu wire ke generate invite
 
@@ -47,30 +47,30 @@ export type Role = 'ketua' | 'anggota';
 export type PaymentStatus = 'belum' | 'lunas' | 'terlambat';
 export type GroupStatus = 'active' | 'dissolved' | 'completed';
 export type Frekuensi = 'mingguan' | 'bulanan';
-export type UndianMode = 'mode1' | 'mode3';  // mode1 = pre-determined, mode3 = hybrid
+export type UndianMode = 'mode1' | 'mode3'; // mode1 = pre-determined, mode3 = hybrid
 
 export type Group = {
   id: string;
   nama: string;
-  nominal: number;             // rupiah, integer
+  nominal: number; // rupiah, integer
   frekuensi: Frekuensi;
-  jumlahPeriode: number;       // mis. 12
-  tanggalMulai: number;        // epoch ms (UTC)
+  jumlahPeriode: number; // mis. 12
+  tanggalMulai: number; // epoch ms (UTC)
   status: GroupStatus;
-  undianMode: UndianMode;      // ditentukan saat create
-  ketuaId: string;             // userId ketua
-  inviteCode: string;          // 7 char, mis. "RT03-X9K"
-  periodeAktif: number;        // 1..jumlahPeriode
+  undianMode: UndianMode; // ditentukan saat create
+  ketuaId: string; // userId ketua
+  inviteCode: string; // 7 char, mis. "RT03-X9K"
+  periodeAktif: number; // 1..jumlahPeriode
   createdAt: number;
 };
 
 export type Member = {
   userId: string;
-  nama: string;                // snapshot dari users.nama saat join (bukan join time read)
+  nama: string; // snapshot dari users.nama saat join (bukan join time read)
   role: Role;
-  giliran: number;             // urutan menang, 1..jumlahPeriode (0 jika belum ditentukan)
+  giliran: number; // urutan menang, 1..jumlahPeriode (0 jika belum ditentukan)
   sudahMenang: boolean;
-  jumlahTukar: number;         // 0..2 (max 2 per PRD F06)
+  jumlahTukar: number; // 0..2 (max 2 per PRD F06)
   joinedAt: number;
 };
 ```
@@ -87,9 +87,9 @@ import admin from 'firebase-admin';
 
 export const createGroup = onCall(async (req) => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Wajib login');
-  
+
   const { nama, nominal, frekuensi, jumlahPeriode, undianMode, tanggalMulai } = req.data ?? {};
-  
+
   // Validate
   if (typeof nama !== 'string' || nama.trim().length < 3) {
     throw new HttpsError('invalid-argument', 'Nama grup minimal 3 karakter');
@@ -109,15 +109,15 @@ export const createGroup = onCall(async (req) => {
   if (typeof tanggalMulai !== 'number') {
     throw new HttpsError('invalid-argument', 'Tanggal mulai wajib epoch ms');
   }
-  
+
   const uid = req.auth.uid;
   const userDoc = await db.collection('users').doc(uid).get();
   if (!userDoc.exists) throw new HttpsError('not-found', 'Profil user tidak ditemukan');
   const userNama = userDoc.data()?.nama as string;
-  
-  const inviteCode = await generateInviteCode(db);  // ensure unique
+
+  const inviteCode = await generateInviteCode(db); // ensure unique
   const groupRef = db.collection('groups').doc();
-  
+
   await db.runTransaction(async (tx) => {
     tx.set(groupRef, {
       nama: nama.trim(),
@@ -132,7 +132,7 @@ export const createGroup = onCall(async (req) => {
       periodeAktif: 1,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    
+
     tx.set(groupRef.collection('members').doc(uid), {
       userId: uid,
       nama: userNama,
@@ -142,7 +142,7 @@ export const createGroup = onCall(async (req) => {
       jumlahTukar: 0,
       joinedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    
+
     // Activity log
     tx.set(groupRef.collection('activityLog').doc(), {
       type: 'group_created',
@@ -152,7 +152,7 @@ export const createGroup = onCall(async (req) => {
       metadata: { undianMode, jumlahPeriode },
     });
   });
-  
+
   return { groupId: groupRef.id, inviteCode };
 });
 ```
@@ -164,9 +164,13 @@ export const createGroup = onCall(async (req) => {
 ```ts
 import { Firestore } from 'firebase-admin/firestore';
 
-const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';  // hilangkan O, 0, 1, I — ambigu
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // hilangkan O, 0, 1, I — ambigu
 
-export async function generateInviteCode(db: Firestore, length = 7, maxRetry = 10): Promise<string> {
+export async function generateInviteCode(
+  db: Firestore,
+  length = 7,
+  maxRetry = 10,
+): Promise<string> {
   for (let i = 0; i < maxRetry; i++) {
     let code = '';
     for (let j = 0; j < length; j++) {
@@ -193,45 +197,45 @@ import admin from 'firebase-admin';
 
 export const joinViaCode = onCall(async (req) => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Wajib login');
-  
+
   const code = (req.data?.code as string | undefined)?.toUpperCase().trim();
   if (!code || code.length !== 7) {
     throw new HttpsError('invalid-argument', 'Kode invite tidak valid');
   }
-  
+
   const uid = req.auth.uid;
   const userDoc = await db.collection('users').doc(uid).get();
   if (!userDoc.exists) throw new HttpsError('not-found', 'Profil user tidak ditemukan');
   const userNama = userDoc.data()?.nama as string;
-  
+
   // Find group
   const groupSnap = await db.collection('groups').where('inviteCode', '==', code).limit(1).get();
   if (groupSnap.empty) throw new HttpsError('not-found', 'Kode tidak ditemukan');
   const groupDoc = groupSnap.docs[0];
   const group = groupDoc.data();
-  
+
   if (group.status !== 'active') {
     throw new HttpsError('failed-precondition', 'Grup sudah tidak aktif');
   }
-  
+
   // Cek apakah sudah member
   const memberRef = groupDoc.ref.collection('members').doc(uid);
   const memberSnap = await memberRef.get();
   if (memberSnap.exists) {
     return { groupId: groupDoc.id, alreadyMember: true };
   }
-  
+
   // Cek apakah arisan sudah mulai (periode > 1) — tidak boleh join setelah mulai (MVP)
   if (group.periodeAktif > 1) {
     throw new HttpsError('failed-precondition', 'Arisan sudah berjalan, tidak bisa join lagi');
   }
-  
+
   // Cek kuota
   const membersCount = (await groupDoc.ref.collection('members').count().get()).data().count;
   if (membersCount >= group.jumlahPeriode) {
     throw new HttpsError('failed-precondition', 'Grup sudah penuh');
   }
-  
+
   await db.runTransaction(async (tx) => {
     tx.set(memberRef, {
       userId: uid,
@@ -242,7 +246,7 @@ export const joinViaCode = onCall(async (req) => {
       jumlahTukar: 0,
       joinedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    
+
     tx.set(groupDoc.ref.collection('activityLog').doc(), {
       type: 'member_joined',
       actorId: uid,
@@ -251,7 +255,7 @@ export const joinViaCode = onCall(async (req) => {
       metadata: {},
     });
   });
-  
+
   return { groupId: groupDoc.id, alreadyMember: false };
 });
 ```
@@ -272,12 +276,12 @@ function isMember(groupId) {
 match /groups/{groupId} {
   allow read: if request.auth != null && isMember(groupId);
   allow write: if false;  // hanya Cloud Function
-  
+
   match /members/{memberId} {
     allow read: if request.auth != null && isMember(groupId);
     allow write: if false;
   }
-  
+
   match /activityLog/{logId} {
     allow read: if request.auth != null && isMember(groupId);
     allow write, delete: if false;  // append-only via Cloud Function
@@ -294,7 +298,7 @@ Deploy rules. **Test manual:** dari client coba `firestore().collection('groups'
 ```ts
 import { create } from 'zustand';
 import { firestore } from '@/services/firebase';
-import type { Group } from '@arisan/shared/types';  // setup path alias jika belum
+import type { Group } from '@arisan/shared/types'; // setup path alias jika belum
 
 type GroupsState = {
   groups: (Group & { id: string })[];
@@ -308,34 +312,42 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
   groups: [],
   loading: true,
   unsubscribe: null,
-  
+
   subscribe: (uid) => {
     // Get all groups where this user is a member
     // Firestore RN doesn't support collection group query without index — pakai approach: query memberships
     const unsub = firestore()
       .collectionGroup('members')
       .where('userId', '==', uid)
-      .onSnapshot(async (snap) => {
-        const groupIds = snap.docs.map((d) => d.ref.parent.parent!.id);
-        if (groupIds.length === 0) {
-          set({ groups: [], loading: false });
-          return;
-        }
-        // Fetch group docs (batched, max 10 per `in` query)
-        const groupDocs = await Promise.all(
-          chunked(groupIds, 10).map((chunk) =>
-            firestore().collection('groups').where(firestore.FieldPath.documentId(), 'in', chunk).get()
-          )
-        );
-        const groups = groupDocs.flatMap((s) => s.docs.map((d) => ({ id: d.id, ...(d.data() as Group) })));
-        set({ groups, loading: false });
-      }, (err) => {
-        console.error('groups subscribe error', err);
-        set({ loading: false });
-      });
+      .onSnapshot(
+        async (snap) => {
+          const groupIds = snap.docs.map((d) => d.ref.parent.parent!.id);
+          if (groupIds.length === 0) {
+            set({ groups: [], loading: false });
+            return;
+          }
+          // Fetch group docs (batched, max 10 per `in` query)
+          const groupDocs = await Promise.all(
+            chunked(groupIds, 10).map((chunk) =>
+              firestore()
+                .collection('groups')
+                .where(firestore.FieldPath.documentId(), 'in', chunk)
+                .get(),
+            ),
+          );
+          const groups = groupDocs.flatMap((s) =>
+            s.docs.map((d) => ({ id: d.id, ...(d.data() as Group) })),
+          );
+          set({ groups, loading: false });
+        },
+        (err) => {
+          console.error('groups subscribe error', err);
+          set({ loading: false });
+        },
+      );
     set({ unsubscribe: unsub });
   },
-  
+
   unsubscribeAll: () => {
     get().unsubscribe?.();
     set({ unsubscribe: null, groups: [], loading: true });
@@ -366,9 +378,10 @@ Deploy: `firebase deploy --only firestore:indexes --project dev`.
 
 Subscribe groups saat user login (di `app/_layout.tsx` setelah `setUser`).
 
-### Task 7 — Wire dashboard [app/(tabs)/index.tsx](../app/(tabs)/index.tsx) ke Firestore
+### Task 7 — Wire dashboard [app/(tabs)/index.tsx](<../app/(tabs)/index.tsx>) ke Firestore
 
 Replace mock data:
+
 - Hapus `import { GROUPS, Group } from '@/data/mock';` (data mock di-keep dulu untuk reference, hapus di Phase 8)
 - Ganti dengan `const { groups, loading } = useGroupsStore();`
 - Render skeleton loading saat `loading`, render empty state ("Belum ada grup. Tap + untuk buat grup pertama") saat `groups.length === 0`
@@ -386,6 +399,7 @@ Replace mock data:
 [app/grup/baru.tsx](../app/grup/baru.tsx):
 
 Sequential form (atau single screen scroll):
+
 1. **Nama grup** — TextInput, min 3 char
 2. **Nominal iuran** — TextInput numeric dengan formatter Rupiah real-time (Rp 500.000)
 3. **Frekuensi** — 2 radio: Mingguan / Bulanan
@@ -422,7 +436,7 @@ Tambahkan entry di profil menu atau FAB Beranda untuk akses screen ini ("Gabung 
 
 ### Task 11 — Deep link handler `arisan://join/{code}`
 
-Di [app/_layout.tsx](../app/_layout.tsx), tambahkan:
+Di [app/\_layout.tsx](../app/_layout.tsx), tambahkan:
 
 ```ts
 import * as Linking from 'expo-linking';
@@ -436,7 +450,7 @@ useEffect(() => {
       if (useAuthStore.getState().user) {
         router.push(`/grup/join?code=${code}`);
       } else {
-        AsyncStorage.setItem('pendingInviteCode', code);  // resume setelah consent
+        AsyncStorage.setItem('pendingInviteCode', code); // resume setelah consent
       }
     }
   };

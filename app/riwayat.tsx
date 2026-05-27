@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Clock } from 'lucide-react-native';
@@ -59,7 +53,10 @@ export default function RiwayatScreen() {
                 <Text
                   style={[
                     styles.chipText,
-                    { color: active ? '#FFF' : colors.textBody, fontFamily: active ? fonts.bold : fonts.semibold },
+                    {
+                      color: active ? '#FFF' : colors.textBody,
+                      fontFamily: active ? fonts.bold : fonts.semibold,
+                    },
                   ]}
                 >
                   {f.label}
@@ -81,11 +78,7 @@ export default function RiwayatScreen() {
           <View style={{ position: 'relative', paddingLeft: 36 }}>
             <View style={styles.line} />
             {items.map((r, i) => (
-              <TimelineItem
-                key={r.id}
-                r={r}
-                last={i === items.length - 1}
-              />
+              <TimelineItem key={r.id} r={r} last={i === items.length - 1} />
             ))}
           </View>
         )}
@@ -94,21 +87,10 @@ export default function RiwayatScreen() {
   );
 }
 
-function TimelineItem({
-  r,
-  last,
-}: {
-  r: RiwayatItem;
-  last: boolean;
-}) {
+function TimelineItem({ r, last }: { r: RiwayatItem; last: boolean }) {
   return (
     <View style={{ position: 'relative', paddingBottom: last ? 0 : 14 }}>
-      <View
-        style={[
-          styles.dot,
-          { borderColor: r.dot },
-        ]}
-      >
+      <View style={[styles.dot, { borderColor: r.dot }]}>
         <Text style={{ fontSize: 12 }}>{r.emoji}</Text>
       </View>
       <View style={[styles.card, shadows.card]}>

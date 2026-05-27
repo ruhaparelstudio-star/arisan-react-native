@@ -53,7 +53,7 @@ Jika user belum siap point di atas — Claude STOP dan minta user kerjakan dulu.
    - [app.json](../app.json)
    - [tsconfig.json](../tsconfig.json)
    - [.gitignore](../.gitignore)
-   - [app/_layout.tsx](../app/_layout.tsx)
+   - [app/\_layout.tsx](../app/_layout.tsx)
 
 ---
 
@@ -90,6 +90,7 @@ npm install -D eslint prettier eslint-config-expo eslint-config-prettier eslint-
 ```
 
 Buat file persis seperti spec di [CLAUDE.md §22](../CLAUDE.md#22-code-quality):
+
 - `.eslintrc.cjs` — pakai snippet §22.3
 - `.prettierrc` — pakai snippet §22.4
 - `.husky/pre-commit` — pakai snippet §22.5, jangan lupa `chmod +x`
@@ -183,7 +184,7 @@ import functions from '@react-native-firebase/functions';
 import crashlytics from '@react-native-firebase/crashlytics';
 
 // Region Jakarta — match Cloud Functions deployment region
-functions().useFunctionsEmulator;  // placeholder — emulator wiring di bawah
+functions().useFunctionsEmulator; // placeholder — emulator wiring di bawah
 
 // Offline persistence — Firestore RN sudah enabled by default di RNFirebase
 // (tidak perlu setting tambahan)
@@ -235,6 +236,7 @@ functions/
 Isi minimal:
 
 **[functions/src/index.ts](../functions/src/index.ts):**
+
 ```ts
 import { onCall } from 'firebase-functions/v2/https';
 import { setGlobalOptions } from 'firebase-functions/v2';
@@ -248,6 +250,7 @@ export const helloWorld = onCall((req) => {
 ```
 
 **[functions/src/lib/firestore.ts](../functions/src/lib/firestore.ts):**
+
 ```ts
 import admin from 'firebase-admin';
 
@@ -258,6 +261,7 @@ export const auth = admin.auth();
 ```
 
 **[functions/shared/types.ts](../functions/shared/types.ts):**
+
 ```ts
 // Shared types antara client & Cloud Functions
 // Diisi seiring phase berikutnya
@@ -275,6 +279,7 @@ Verifikasi: `cd functions && npm run build` → exit 0.
 ### Task 8 — Firebase config files (firestore.rules, firestore.indexes.json, firebase.json)
 
 **[firestore.rules](../firestore.rules)** — baseline deny-all (PRD §7.1):
+
 ```
 rules_version = '2';
 service cloud.firestore {
@@ -288,11 +293,13 @@ service cloud.firestore {
 ```
 
 **[firestore.indexes.json](../firestore.indexes.json):**
+
 ```json
 { "indexes": [], "fieldOverrides": [] }
 ```
 
 **[firebase.json](../firebase.json)** (firebase init biasanya sudah buat — verify dan adjust):
+
 ```json
 {
   "functions": [
@@ -320,6 +327,7 @@ service cloud.firestore {
 ### Task 9 — `.firebaserc` (project aliases)
 
 **[.firebaserc](../.firebaserc):**
+
 ```json
 {
   "projects": {
@@ -339,6 +347,7 @@ firebase emulators:start --only functions,firestore,auth
 Di terminal lain, test call (cukup browser ke `http://localhost:4000` → Functions tab → invoke `helloWorld`).
 
 Setelah pass emulator, deploy ke dev:
+
 ```bash
 firebase deploy --only functions --project dev
 ```

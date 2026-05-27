@@ -29,7 +29,7 @@
 2. **PRD §4.3 F13, §10.5** — legal & compliance acceptance
 3. **UU PDP context**: UU No. 27/2022 — user berhak hapus semua data pribadi. Implementasi: hard delete `users/{userId}` doc + anonymize semua referensi (set fields ke "Pengguna Dihapus").
 4. **File existing**:
-   - [app/(tabs)/profil.tsx](../app/(tabs)/profil.tsx) — sekarang sudah punya menu, tambah entry Privacy/ToS/Delete Account
+   - [app/(tabs)/profil.tsx](<../app/(tabs)/profil.tsx>) — sekarang sudah punya menu, tambah entry Privacy/ToS/Delete Account
 
 ---
 
@@ -38,6 +38,7 @@
 ### Task 1 — Firestore Security Rules complete + finalize
 
 Audit [firestore.rules](../firestore.rules) — verify SEMUA collection sudah covered:
+
 - `users/{userId}` ✅ (Phase 2)
 - `otpQuota/{phone}` ✅ (Phase 2 — deny all)
 - `groups/{groupId}` ✅ (Phase 3)
@@ -52,13 +53,15 @@ Audit [firestore.rules](../firestore.rules) — verify SEMUA collection sudah co
 - `nps/{key}` — TAMBAH untuk Phase 9 NPS survey
 
 Pastikan default deny tetap di akhir:
+
 ```
 match /{document=**} {
   allow read, write: if false;
 }
 ```
 
-Test additional cases — extend [__tests__/rules/](../__tests__/rules/):
+Test additional cases — extend [**tests**/rules/](../__tests__/rules/):
+
 - `notifLog` — verify deny all client access
 - `nps` — verify hanya owner bisa write
 - Final sweep: test setiap collection user dengan/tanpa auth, dalam/luar grup
@@ -71,7 +74,8 @@ Deploy: `firebase deploy --only firestore:rules --project dev`.
 
 Buat folder [app/legal/](../app/legal/):
 
-**[app/legal/_layout.tsx](../app/legal/_layout.tsx):**
+**[app/legal/\_layout.tsx](../app/legal/_layout.tsx):**
+
 ```tsx
 import { Stack } from 'expo-router';
 export default function LegalLayout() {
@@ -111,6 +115,7 @@ Sama: placeholder `[NAMA TIM]` untuk di-fill user.
 ### Task 3 — Update auth/consent.tsx + profil.tsx untuk link Privacy/ToS
 
 [app/auth/consent.tsx](../app/auth/consent.tsx) (Phase 2) — text "Saya setuju..." + 2 link clickable:
+
 ```tsx
 <Text>
   Saya setuju dengan{' '}
@@ -124,7 +129,8 @@ Sama: placeholder `[NAMA TIM]` untuk di-fill user.
 </Text>
 ```
 
-[app/(tabs)/profil.tsx](../app/(tabs)/profil.tsx) — tambah menu section "Hukum & Privasi":
+[app/(tabs)/profil.tsx](<../app/(tabs)/profil.tsx>) — tambah menu section "Hukum & Privasi":
+
 - Item 1: "Kebijakan Privasi" → `router.push('/legal/privacy')`
 - Item 2: "Ketentuan Layanan" → `router.push('/legal/tos')`
 - Item 3 (danger): "Hapus Akun" → `router.push('/akun/hapus')` (Task 4)
@@ -132,8 +138,9 @@ Sama: placeholder `[NAMA TIM]` untuk di-fill user.
 ### Task 4 — Delete Account flow
 
 [app/akun/hapus.tsx](../app/akun/hapus.tsx) — confirmation screen:
+
 - Warning besar: ⚠️ "Hapus Akun Permanen"
-- Penjelasan: 
+- Penjelasan:
   - Profil & data login akan dihapus permanen
   - Data grup arisan (riwayat, pembayaran) **tetap tersimpan** untuk transparansi grup, tapi nama kamu diganti "Pengguna Dihapus"
   - Tidak bisa dibatalkan
@@ -152,46 +159,48 @@ import admin from 'firebase-admin';
 export const deleteAccount = onCall(async (req) => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Wajib login');
   const uid = req.auth.uid;
-  
+
   // 1. Cek apakah user adalah ketua tunggal di grup manapun
   const ketuaGroups = await db.collection('groups').where('ketuaId', '==', uid).get();
   if (!ketuaGroups.empty) {
-    throw new HttpsError('failed-precondition', 
-      `Kamu ketua di ${ketuaGroups.size} grup. Tunjuk ketua baru atau bubarkan grup dulu.`);
+    throw new HttpsError(
+      'failed-precondition',
+      `Kamu ketua di ${ketuaGroups.size} grup. Tunjuk ketua baru atau bubarkan grup dulu.`,
+    );
     // Phase 2 enhancement: bisa transfer ketua flow
   }
-  
+
   // 2. Anonymize semua referensi di grup yang user adalah anggota
   const memberDocs = await db.collectionGroup('members').where('userId', '==', uid).get();
   const batch = db.batch();
-  
+
   for (const memberDoc of memberDocs.docs) {
     batch.update(memberDoc.ref, {
       nama: 'Pengguna Dihapus',
       deletedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   }
-  
+
   // 3. Anonymize messages (keep text, anonymize author)
   const messageDocs = await db.collectionGroup('messages').where('authorId', '==', uid).get();
   for (const msg of messageDocs.docs) {
     batch.update(msg.ref, { authorNama: 'Pengguna Dihapus' });
   }
-  
+
   // 4. Anonymize activityLog actorNama
   const logDocs = await db.collectionGroup('activityLog').where('actorId', '==', uid).get();
   for (const log of logDocs.docs) {
     batch.update(log.ref, { actorNama: 'Pengguna Dihapus' });
   }
-  
+
   // 5. Hapus user doc
   batch.delete(db.collection('users').doc(uid));
-  
+
   await batch.commit();
-  
+
   // 6. Hapus Auth user (last — tidak bisa rollback)
   await adminAuth.deleteUser(uid);
-  
+
   return { ok: true };
 });
 ```
@@ -201,6 +210,7 @@ Update Firestore rules untuk allow Cloud Function update `members.deletedAt`, `m
 **Catatan UU PDP**: hard delete `users/{userId}` + anonymize referensi = compliant. Audit trail tetap utuh (PRD principle: append-only log).
 
 Setelah Cloud Function sukses, client side:
+
 ```ts
 await deleteAccount();
 await useAuthStore.getState().logout();
@@ -227,18 +237,21 @@ export const setCrashlyticsUser = (uid: string) => {
 export const logEvent = (msg: string) => crashlytics().log(msg);
 
 export const recordError = (err: Error, context?: Record<string, any>) => {
-  if (context) Object.entries(context).forEach(([k, v]) => crashlytics().setAttribute(k, String(v)));
+  if (context)
+    Object.entries(context).forEach(([k, v]) => crashlytics().setAttribute(k, String(v)));
   crashlytics().recordError(err);
 };
 ```
 
-Call `initCrashlytics()` di [app/_layout.tsx](../app/_layout.tsx) saat app start. Call `setCrashlyticsUser(uid)` di auth listener setelah user login.
+Call `initCrashlytics()` di [app/\_layout.tsx](../app/_layout.tsx) saat app start. Call `setCrashlyticsUser(uid)` di auth listener setelah user login.
 
 **Verifikasi**: force crash di dev (button hidden behind 5 taps di profil debug section):
+
 ```ts
 import crashlytics from '@react-native-firebase/crashlytics';
 crashlytics().crash();
 ```
+
 Cek di Firebase Console → Crashlytics tab → crash report muncul dalam 5 menit.
 
 ### Task 6 — Firebase Performance Monitoring
@@ -253,12 +266,14 @@ export const initPerformance = async () => {
 };
 
 export const startTrace = (name: string) => perf().startTrace(name);
-export const newHttpMetric = (url: string, method: string) => perf().newHttpMetric(url, method as any);
+export const newHttpMetric = (url: string, method: string) =>
+  perf().newHttpMetric(url, method as any);
 ```
 
 Call `initPerformance()` di app start.
 
 Tambah custom trace untuk operations kritis:
+
 ```ts
 // Di confirmPayment:
 const trace = await startTrace('payment_confirm_e2e');
@@ -281,13 +296,18 @@ import analytics from '@react-native-firebase/analytics';
 
 export const trackEvent = async (name: string, params?: Record<string, any>) => {
   // SAFETY: filter PII
-  const safe = params ? Object.fromEntries(
-    Object.entries(params).filter(([k]) => !['phone', 'nama', 'fotoUrl', 'text'].includes(k))
-  ) : undefined;
+  const safe = params
+    ? Object.fromEntries(
+        Object.entries(params).filter(([k]) => !['phone', 'nama', 'fotoUrl', 'text'].includes(k)),
+      )
+    : undefined;
   await analytics().logEvent(name, safe);
 };
 
-export const setUserProperty = async (key: 'role_primary' | 'groups_count' | 'timezone', value: string) => {
+export const setUserProperty = async (
+  key: 'role_primary' | 'groups_count' | 'timezone',
+  value: string,
+) => {
   await analytics().setUserProperty(key, value);
 };
 
@@ -296,20 +316,21 @@ export const setAnalyticsUser = (uid: string) => analytics().setUserId(uid);
 
 Implementasi event taxonomy per [CLAUDE.md §21.3](../CLAUDE.md#21-logging-analytics--event-tracking):
 
-| Trigger | Event |
-|---------|-------|
-| Group create success di [app/grup/baru.tsx](../app/grup/baru.tsx) | `trackEvent('group_created', { frekuensi, jumlahPeriode, nominal })` |
-| Join via kode/link di [app/grup/join.tsx](../app/grup/join.tsx) | `trackEvent('group_joined', { via: 'code' | 'link' })` |
-| `validatePayment` success di client | `trackEvent('payment_confirmed', { groupId, periodeId, late: false })` |
-| `triggerUndian` success di client | `trackEvent('undian_triggered', { mode: 'mode3', method })` |
-| `setTanggalPelaksanaan` success | `trackEvent('winner_set_tanggal', { daysFromWin })` |
-| `requestSwap` success | `trackEvent('swap_requested')` |
-| `approveSwap` success | `trackEvent('swap_approved', { daysToComplete })` |
-| Chat message send | `trackEvent('chat_message_sent', { length: bucketed })` |
-| Notif tap | `trackEvent('notif_opened', { type })` |
-| App foreground | `trackEvent('app_opened', { from })` |
+| Trigger                                                           | Event                                                                  |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
+| Group create success di [app/grup/baru.tsx](../app/grup/baru.tsx) | `trackEvent('group_created', { frekuensi, jumlahPeriode, nominal })`   |
+| Join via kode/link di [app/grup/join.tsx](../app/grup/join.tsx)   | `trackEvent('group_joined', { via: 'code'                              | 'link' })` |
+| `validatePayment` success di client                               | `trackEvent('payment_confirmed', { groupId, periodeId, late: false })` |
+| `triggerUndian` success di client                                 | `trackEvent('undian_triggered', { mode: 'mode3', method })`            |
+| `setTanggalPelaksanaan` success                                   | `trackEvent('winner_set_tanggal', { daysFromWin })`                    |
+| `requestSwap` success                                             | `trackEvent('swap_requested')`                                         |
+| `approveSwap` success                                             | `trackEvent('swap_approved', { daysToComplete })`                      |
+| Chat message send                                                 | `trackEvent('chat_message_sent', { length: bucketed })`                |
+| Notif tap                                                         | `trackEvent('notif_opened', { type })`                                 |
+| App foreground                                                    | `trackEvent('app_opened', { from })`                                   |
 
 Set user properties saat login:
+
 ```ts
 await setAnalyticsUser(uid);
 await setUserProperty('timezone', user.timezone);
@@ -319,6 +340,7 @@ await setUserProperty('timezone', user.timezone);
 ### Task 8 — NPS survey trigger (optional foundation)
 
 Skema minimum:
+
 - Trigger condition: `winner_set_tanggal` count for user ≥ 2 (track via Firestore `nps/{userId}_state`)
 - Modal: rating 0-10 + optional text comment
 - Save: `nps/{userId}_{periodeNumber}` document
@@ -329,6 +351,7 @@ Bisa stub UI placeholder di Phase 9, full trigger logic di Phase 2 jika overrun.
 ### Task 9 — (Opsional) Sentry
 
 Jika tim mau Sentry untuk JS error tracking:
+
 ```bash
 npx @sentry/wizard@latest -i reactNative
 ```

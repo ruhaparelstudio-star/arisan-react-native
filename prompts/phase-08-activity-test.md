@@ -89,22 +89,24 @@ import dayjs from 'dayjs';
 
 export default function RiwayatScreen() {
   const { groupId } = useLocalSearchParams<{ groupId?: string }>();
-  const user = useAuthStore(s => s.user)!;
+  const user = useAuthStore((s) => s.user)!;
   const [filter, setFilter] = useState<ActivityCategory | 'all'>('all');
   const [items, setItems] = useState<(ActivityLog & { groupId: string })[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     let unsub: (() => void) | null = null;
-    
+
     if (groupId) {
       // Single group log
       unsub = firestore()
-        .collection('groups').doc(groupId).collection('activityLog')
+        .collection('groups')
+        .doc(groupId)
+        .collection('activityLog')
         .orderBy('timestamp', 'desc')
         .limit(100)
         .onSnapshot((snap) => {
-          setItems(snap.docs.map(d => ({ logId: d.id, groupId, ...(d.data() as any) })));
+          setItems(snap.docs.map((d) => ({ logId: d.id, groupId, ...(d.data() as any) })));
           setLoading(false);
         });
     } else {
@@ -113,34 +115,39 @@ export default function RiwayatScreen() {
         .collectionGroup('activityLog')
         .orderBy('timestamp', 'desc')
         .limit(100)
-        .onSnapshot(async (snap) => {
-          // Filter only groups user is member of (security rules akan deny otomatis untuk yang bukan)
-          // Jika ada permission error per doc, akan logged tapi tidak crash
-          const filtered = snap.docs.map(d => {
-            const groupRef = d.ref.parent.parent!;
-            return { logId: d.id, groupId: groupRef.id, ...(d.data() as any) };
-          });
-          setItems(filtered);
-          setLoading(false);
-        }, (err) => {
-          console.error('riwayat error', err);
-          setLoading(false);
-        });
+        .onSnapshot(
+          async (snap) => {
+            // Filter only groups user is member of (security rules akan deny otomatis untuk yang bukan)
+            // Jika ada permission error per doc, akan logged tapi tidak crash
+            const filtered = snap.docs.map((d) => {
+              const groupRef = d.ref.parent.parent!;
+              return { logId: d.id, groupId: groupRef.id, ...(d.data() as any) };
+            });
+            setItems(filtered);
+            setLoading(false);
+          },
+          (err) => {
+            console.error('riwayat error', err);
+            setLoading(false);
+          },
+        );
     }
-    
+
     return () => unsub?.();
   }, [groupId]);
-  
-  const filteredItems = filter === 'all' 
-    ? items 
-    : items.filter(i => ACTIVITY_CATEGORY[i.type as keyof typeof ACTIVITY_CATEGORY] === filter);
-  
+
+  const filteredItems =
+    filter === 'all'
+      ? items
+      : items.filter((i) => ACTIVITY_CATEGORY[i.type as keyof typeof ACTIVITY_CATEGORY] === filter);
+
   // Render filter chips + timeline (reuse existing UI from riwayat.tsx)
   // Format timestamp: dayjs(ms).tz(user.timezone).format('D MMM, HH:mm') + ' WIB/WITA/WIT'
 }
 ```
 
 Mapping `type` → emoji + dot color (replicate dari mock RIWAYAT mapping):
+
 - `payment_confirmed` → 🟢 green
 - `undian_done` / `urutan_preset_mode1` → 🏆 purple
 - `tanggal_set` / `tanggal_overridden` → 📅 blue
@@ -149,10 +156,12 @@ Mapping `type` → emoji + dot color (replicate dari mock RIWAYAT mapping):
 - `member_joined` → 👋 gray
 
 Title & desc template per tipe — derive dari `actorNama` + `metadata`. Contoh:
+
 - `payment_confirmed`: title `"${actorNama} mengkonfirmasi pembayaran ${metadata.targetNama}"`, desc `"Periode ${metadata.periodeId}"`
 - `undian_done`: title `"Undian Periode ${metadata.periodeId} selesai"`, desc `"Pemenang: ${metadata.winnerNama} (${metadata.method})"`
 
 **Index requirement** — tambah [firestore.indexes.json](../firestore.indexes.json):
+
 ```json
 {
   "collectionGroup": "activityLog",
@@ -168,6 +177,7 @@ npm install -D jest @types/jest ts-jest jest-environment-node @firebase/rules-un
 ```
 
 **`jest.config.js`** (root):
+
 ```js
 module.exports = {
   preset: 'ts-jest',
@@ -182,6 +192,7 @@ module.exports = {
 ```
 
 **`jest.rules.config.js`** (root) — khusus Firestore rules:
+
 ```js
 module.exports = {
   preset: 'ts-jest',
@@ -192,6 +203,7 @@ module.exports = {
 ```
 
 Update [package.json](../package.json) scripts:
+
 ```json
 "test": "jest",
 "test:rules": "firebase emulators:exec --only firestore 'jest --config jest.rules.config.js'",
@@ -200,7 +212,7 @@ Update [package.json](../package.json) scripts:
 
 ### Task 4 — Unit tests untuk shared helpers
 
-[__tests__/random.test.ts](../__tests__/random.test.ts) — test `functions/src/lib/random.ts`:
+[**tests**/random.test.ts](../__tests__/random.test.ts) — test `functions/src/lib/random.ts`:
 
 ```ts
 import { randomPick, randomShuffle } from '../functions/src/lib/random';
@@ -209,13 +221,13 @@ describe('randomPick', () => {
   it('throws on empty array', () => {
     expect(() => randomPick([])).toThrow();
   });
-  
+
   it('returns element from array', () => {
     const arr = ['a', 'b', 'c'];
     const picked = randomPick(arr);
     expect(arr).toContain(picked);
   });
-  
+
   it('distributes roughly uniform across 10k samples', () => {
     const arr = ['a', 'b', 'c', 'd'];
     const counts = { a: 0, b: 0, c: 0, d: 0 };
@@ -223,8 +235,8 @@ describe('randomPick', () => {
       counts[randomPick(arr) as keyof typeof counts]++;
     }
     // each should be within ~10% of 2500
-    Object.values(counts).forEach(c => expect(c).toBeGreaterThan(2200));
-    Object.values(counts).forEach(c => expect(c).toBeLessThan(2800));
+    Object.values(counts).forEach((c) => expect(c).toBeGreaterThan(2200));
+    Object.values(counts).forEach((c) => expect(c).toBeLessThan(2800));
   });
 });
 
@@ -233,12 +245,12 @@ describe('randomShuffle', () => {
     const arr = [1, 2, 3, 4, 5];
     expect(randomShuffle(arr).length).toBe(5);
   });
-  
+
   it('returns same elements (set equality)', () => {
     const arr = [1, 2, 3, 4, 5];
     expect(randomShuffle(arr).sort()).toEqual(arr);
   });
-  
+
   it('does not mutate input', () => {
     const arr = [1, 2, 3];
     const original = [...arr];
@@ -250,12 +262,17 @@ describe('randomShuffle', () => {
 
 ### Task 5 — Firestore Security Rules tests (PRD §8.1)
 
-Buat folder [__tests__/rules/](../__tests__/rules/).
+Buat folder [**tests**/rules/](../__tests__/rules/).
 
-[__tests__/rules/users.test.ts](../__tests__/rules/users.test.ts):
+[**tests**/rules/users.test.ts](../__tests__/rules/users.test.ts):
 
 ```ts
-import { initializeTestEnvironment, RulesTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
+import {
+  initializeTestEnvironment,
+  RulesTestEnvironment,
+  assertFails,
+  assertSucceeds,
+} from '@firebase/rules-unit-testing';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import * as fs from 'fs';
 
@@ -272,25 +289,29 @@ beforeAll(async () => {
   });
 });
 
-beforeEach(async () => { await env.clearFirestore(); });
-afterAll(async () => { await env.cleanup(); });
+beforeEach(async () => {
+  await env.clearFirestore();
+});
+afterAll(async () => {
+  await env.cleanup();
+});
 
 describe('users rules', () => {
   it('user can read own doc', async () => {
     const alice = env.authenticatedContext('alice').firestore();
     await assertSucceeds(getDoc(doc(alice, 'users/alice')));
   });
-  
+
   it('user cannot read other user doc', async () => {
     const alice = env.authenticatedContext('alice').firestore();
     await assertFails(getDoc(doc(alice, 'users/bob')));
   });
-  
+
   it('user can write own doc', async () => {
     const alice = env.authenticatedContext('alice').firestore();
     await assertSucceeds(setDoc(doc(alice, 'users/alice'), { nama: 'Alice' }));
   });
-  
+
   it('user cannot delete own doc', async () => {
     const alice = env.authenticatedContext('alice').firestore();
     await assertFails(deleteDoc(doc(alice, 'users/alice')));
@@ -298,7 +319,7 @@ describe('users rules', () => {
 });
 ```
 
-[__tests__/rules/payments.test.ts](../__tests__/rules/payments.test.ts):
+[**tests**/rules/payments.test.ts](../__tests__/rules/payments.test.ts):
 
 ```ts
 // ... setup similar
@@ -313,17 +334,17 @@ describe('payments rules — PRD §10.4', () => {
       await setDoc(doc(db, 'groups/g1/periods/01'), { nomor: 1 });
     });
   });
-  
+
   it('ketua cannot write payments directly (must use Cloud Function)', async () => {
     const alice = env.authenticatedContext('alice').firestore();
     await assertFails(setDoc(doc(alice, 'groups/g1/periods/01/payments/bob'), { status: 'lunas' }));
   });
-  
+
   it('anggota cannot write payments', async () => {
     const bob = env.authenticatedContext('bob').firestore();
     await assertFails(setDoc(doc(bob, 'groups/g1/periods/01/payments/bob'), { status: 'lunas' }));
   });
-  
+
   it('member can read payments', async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), 'groups/g1/periods/01/payments/bob'), { status: 'lunas' });
@@ -331,7 +352,7 @@ describe('payments rules — PRD §10.4', () => {
     const bob = env.authenticatedContext('bob').firestore();
     await assertSucceeds(getDoc(doc(bob, 'groups/g1/periods/01/payments/bob')));
   });
-  
+
   it('non-member cannot read payments', async () => {
     const charlie = env.authenticatedContext('charlie').firestore();
     await assertFails(getDoc(doc(charlie, 'groups/g1/periods/01/payments/bob')));
@@ -339,7 +360,7 @@ describe('payments rules — PRD §10.4', () => {
 });
 ```
 
-[__tests__/rules/activityLog.test.ts](../__tests__/rules/activityLog.test.ts):
+[**tests**/rules/activityLog.test.ts](../__tests__/rules/activityLog.test.ts):
 
 ```ts
 describe('activityLog rules — append-only', () => {
@@ -349,21 +370,23 @@ describe('activityLog rules — append-only', () => {
       await setDoc(doc(db, 'groups/g1'), { ketuaId: 'alice' });
       await setDoc(doc(db, 'groups/g1/members/alice'), { role: 'ketua' });
       await setDoc(doc(db, 'groups/g1/activityLog/log1'), {
-        type: 'group_created', actorId: 'alice', timestamp: Date.now(),
+        type: 'group_created',
+        actorId: 'alice',
+        timestamp: Date.now(),
       });
     });
   });
-  
+
   it('member can read log', async () => {
     const alice = env.authenticatedContext('alice').firestore();
     await assertSucceeds(getDoc(doc(alice, 'groups/g1/activityLog/log1')));
   });
-  
+
   it('NO ONE can write activityLog from client', async () => {
     const alice = env.authenticatedContext('alice').firestore();
     await assertFails(setDoc(doc(alice, 'groups/g1/activityLog/log2'), { type: 'x' }));
   });
-  
+
   it('NO ONE can delete activityLog from client', async () => {
     const alice = env.authenticatedContext('alice').firestore();
     await assertFails(deleteDoc(doc(alice, 'groups/g1/activityLog/log1')));
@@ -371,7 +394,7 @@ describe('activityLog rules — append-only', () => {
 });
 ```
 
-[__tests__/rules/messages.test.ts](../__tests__/rules/messages.test.ts):
+[**tests**/rules/messages.test.ts](../__tests__/rules/messages.test.ts):
 
 ```ts
 describe('messages rules', () => {
@@ -383,35 +406,52 @@ describe('messages rules', () => {
       await setDoc(doc(db, 'groups/g1/members/bob'), { role: 'anggota' });
     });
   });
-  
+
   it('member can create message with own authorId', async () => {
     const bob = env.authenticatedContext('bob').firestore();
-    await assertSucceeds(addDoc(collection(bob, 'groups/g1/messages'), {
-      kind: 'msg', text: 'halo', authorId: 'bob', createdAt: serverTimestamp(),
-    }));
+    await assertSucceeds(
+      addDoc(collection(bob, 'groups/g1/messages'), {
+        kind: 'msg',
+        text: 'halo',
+        authorId: 'bob',
+        createdAt: serverTimestamp(),
+      }),
+    );
   });
-  
+
   it('member cannot create message with different authorId (spoof)', async () => {
     const bob = env.authenticatedContext('bob').firestore();
-    await assertFails(addDoc(collection(bob, 'groups/g1/messages'), {
-      kind: 'msg', text: 'halo', authorId: 'alice',  // spoofing
-    }));
+    await assertFails(
+      addDoc(collection(bob, 'groups/g1/messages'), {
+        kind: 'msg',
+        text: 'halo',
+        authorId: 'alice', // spoofing
+      }),
+    );
   });
-  
+
   it('cannot create empty message', async () => {
     const bob = env.authenticatedContext('bob').firestore();
-    await assertFails(addDoc(collection(bob, 'groups/g1/messages'), {
-      kind: 'msg', text: '', authorId: 'bob',
-    }));
+    await assertFails(
+      addDoc(collection(bob, 'groups/g1/messages'), {
+        kind: 'msg',
+        text: '',
+        authorId: 'bob',
+      }),
+    );
   });
-  
+
   it('cannot create text > 1000 chars', async () => {
     const bob = env.authenticatedContext('bob').firestore();
-    await assertFails(addDoc(collection(bob, 'groups/g1/messages'), {
-      kind: 'msg', text: 'x'.repeat(1001), authorId: 'bob',
-    }));
+    await assertFails(
+      addDoc(collection(bob, 'groups/g1/messages'), {
+        kind: 'msg',
+        text: 'x'.repeat(1001),
+        authorId: 'bob',
+      }),
+    );
   });
-  
+
   it('cannot update or delete message', async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), 'groups/g1/messages/m1'), { text: 'old', authorId: 'bob' });
@@ -425,7 +465,7 @@ describe('messages rules', () => {
 
 ### Task 6 — Cloud Functions integration tests (Emulator)
 
-[functions/__tests__/triggerUndian.test.ts](../functions/__tests__/triggerUndian.test.ts):
+[functions/**tests**/triggerUndian.test.ts](../functions/__tests__/triggerUndian.test.ts):
 
 ```ts
 import * as admin from 'firebase-admin';
@@ -453,74 +493,108 @@ afterAll(async () => {
 describe('triggerUndian', () => {
   beforeEach(async () => {
     // Clear firestore via emulator REST API
-    await fetch('http://localhost:8080/emulator/v1/projects/arisan-test/databases/(default)/documents', {
-      method: 'DELETE',
-    });
-    
+    await fetch(
+      'http://localhost:8080/emulator/v1/projects/arisan-test/databases/(default)/documents',
+      {
+        method: 'DELETE',
+      },
+    );
+
     // Seed: grup dengan ketua + 3 anggota
     const db = admin.firestore();
     await db.collection('groups').doc('g1').set({
-      ketuaId: 'alice', undianMode: 'mode3', jumlahPeriode: 3, periodeAktif: 1,
+      ketuaId: 'alice',
+      undianMode: 'mode3',
+      jumlahPeriode: 3,
+      periodeAktif: 1,
     });
     await db.collection('groups/g1/members').doc('alice').set({
-      userId: 'alice', nama: 'Alice', role: 'ketua', giliran: 0, sudahMenang: false, jumlahTukar: 0,
+      userId: 'alice',
+      nama: 'Alice',
+      role: 'ketua',
+      giliran: 0,
+      sudahMenang: false,
+      jumlahTukar: 0,
     });
     await db.collection('groups/g1/members').doc('bob').set({
-      userId: 'bob', nama: 'Bob', role: 'anggota', giliran: 0, sudahMenang: false, jumlahTukar: 0,
+      userId: 'bob',
+      nama: 'Bob',
+      role: 'anggota',
+      giliran: 0,
+      sudahMenang: false,
+      jumlahTukar: 0,
     });
     await db.collection('groups/g1/members').doc('charlie').set({
-      userId: 'charlie', nama: 'Charlie', role: 'anggota', giliran: 0, sudahMenang: true, jumlahTukar: 0,
+      userId: 'charlie',
+      nama: 'Charlie',
+      role: 'anggota',
+      giliran: 0,
+      sudahMenang: true,
+      jumlahTukar: 0,
     });
   });
-  
+
   it('PRD §8.1 — random NEVER picks sudahMenang=true', async () => {
     for (let i = 0; i < 20; i++) {
       // Reset winners between iterations
-      await admin.firestore().collection('groups/g1/winners').doc('01').delete().catch(() => {});
-      
+      await admin
+        .firestore()
+        .collection('groups/g1/winners')
+        .doc('01')
+        .delete()
+        .catch(() => {});
+
       const result = await wrapped({
         data: { groupId: 'g1', periodeId: '01', method: 'random' },
         auth: { uid: 'alice' },
       } as any);
-      
-      expect(result.winnerId).not.toBe('charlie');  // sudahMenang
+
+      expect(result.winnerId).not.toBe('charlie'); // sudahMenang
     }
   });
-  
+
   it('rejects manual without alasan', async () => {
-    await expect(wrapped({
-      data: { groupId: 'g1', periodeId: '01', method: 'manual', manualWinnerId: 'bob' },
-      auth: { uid: 'alice' },
-    } as any)).rejects.toThrow(/alasan/i);
+    await expect(
+      wrapped({
+        data: { groupId: 'g1', periodeId: '01', method: 'manual', manualWinnerId: 'bob' },
+        auth: { uid: 'alice' },
+      } as any),
+    ).rejects.toThrow(/alasan/i);
   });
-  
+
   it('rejects when not ketua', async () => {
-    await expect(wrapped({
-      data: { groupId: 'g1', periodeId: '01', method: 'random' },
-      auth: { uid: 'bob' },  // bukan ketua
-    } as any)).rejects.toThrow(/ketua/i);
+    await expect(
+      wrapped({
+        data: { groupId: 'g1', periodeId: '01', method: 'random' },
+        auth: { uid: 'bob' }, // bukan ketua
+      } as any),
+    ).rejects.toThrow(/ketua/i);
   });
-  
+
   it('rejects double trigger for same period', async () => {
     await wrapped({
       data: { groupId: 'g1', periodeId: '01', method: 'random' },
       auth: { uid: 'alice' },
     } as any);
-    
-    await expect(wrapped({
-      data: { groupId: 'g1', periodeId: '01', method: 'random' },
-      auth: { uid: 'alice' },
-    } as any)).rejects.toThrow(/sudah ditentukan/i);
+
+    await expect(
+      wrapped({
+        data: { groupId: 'g1', periodeId: '01', method: 'random' },
+        auth: { uid: 'alice' },
+      } as any),
+    ).rejects.toThrow(/sudah ditentukan/i);
   });
 });
 ```
 
 Buat tests serupa untuk:
-- [functions/__tests__/validatePayment.test.ts](../functions/__tests__/validatePayment.test.ts) — ketua only, no double confirm, status update
-- [functions/__tests__/approveSwap.test.ts](../functions/__tests__/approveSwap.test.ts) — atomic swap, jumlahTukar increment, sudahMenang check
-- [functions/__tests__/rateLimitOTP.test.ts](../functions/__tests__/rateLimitOTP.test.ts) — 5 boleh, ke-6 throw
+
+- [functions/**tests**/validatePayment.test.ts](../functions/__tests__/validatePayment.test.ts) — ketua only, no double confirm, status update
+- [functions/**tests**/approveSwap.test.ts](../functions/__tests__/approveSwap.test.ts) — atomic swap, jumlahTukar increment, sudahMenang check
+- [functions/**tests**/rateLimitOTP.test.ts](../functions/__tests__/rateLimitOTP.test.ts) — 5 boleh, ke-6 throw
 
 [functions/package.json](../functions/package.json) scripts:
+
 ```json
 "test": "FIRESTORE_EMULATOR_HOST=localhost:8080 jest"
 ```
@@ -532,6 +606,7 @@ npm install -D @vitest/coverage-v8  # OR jest --coverage native
 ```
 
 Update `jest.config.js` add:
+
 ```js
 collectCoverageFrom: [
   'functions/src/**/*.ts',
