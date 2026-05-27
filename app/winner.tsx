@@ -111,6 +111,9 @@ function ConfettoPiece({ c }: { c: Confetto }) {
         ]),
       ).start();
     run();
+    // Mount-only: animasi confetti satu loop tak terbatas; `fall` ref stabil
+    // & nilai `c.*` tidak perlu re-trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const translateY = fall.interpolate({
@@ -166,6 +169,8 @@ function TrophyCircle() {
         }),
       ]),
     ).start();
+    // Mount-only: bob animation tak terbatas; `bob` ref stabil.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const translateY = bob.interpolate({
     inputRange: [0, 1],
