@@ -34,13 +34,21 @@
       [
         "expo-build-properties",
         {
-          "ios": { "useFrameworks": "static" },
+          "ios": {
+            "useFrameworks": "static"
+          },
           "android": {}
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "92d69e30-dd94-4550-a2b2-2ba30b1616ca"
+      }
     }
   }
 }
