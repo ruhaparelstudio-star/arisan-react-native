@@ -101,14 +101,14 @@ UI shell sekarang **bukan sekadar belum di-wire ke backend** — ada mismatch st
 
 ### 🟡 Screen PRD yang belum dibuat (wajib sebelum MVP)
 
-| PRD | Screen yang hilang                                                                                                                                                              |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| F01 | Splash → Input nomor HP (+62) → OTP input → first-run consent (Privacy + ToS)                                                                                                   |
-| F02 | "Buat Grup" form (nama, nominal, frekuensi bulanan/mingguan, jumlah periode) — FAB di [app/(tabs)/index.tsx:99](<app/(tabs)/index.tsx#L99>) sudah ada tapi `onPress={() => {}}` |
-| F02 | Screen invite (generate kode unik + deep link share) — tombol di pengaturan tanpa handler                                                                                       |
-| F02 | Screen join via kode / deep link landing                                                                                                                                        |
-| F06 | **Layer 2** — screen ketua approve setelah recipient setuju ([app/approval.tsx](app/approval.tsx) baru cover Layer 1)                                                           |
-| F13 | Privacy Policy in-app, Terms of Service in-app, Delete Account flow (wajib UU PDP & Play Store)                                                                                 |
+| PRD     | Screen yang hilang                                                                                                                                                        |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F01     | Splash → Input nomor HP (+62) → OTP input → first-run consent (Privacy + ToS)                                                                                             |
+| ~~F02~~ | ~~"Buat Grup" form (nama, nominal, frekuensi bulanan/mingguan, jumlah periode)~~ ✅ Phase 3 — [app/grup/baru.tsx](app/grup/baru.tsx), FAB di Beranda wired                |
+| ~~F02~~ | ~~Screen invite (generate kode unik + deep link share)~~ ✅ Phase 3 — [app/grup/[id]/invite.tsx](app/grup/%5Bid%5D/invite.tsx), pengaturan wired                          |
+| ~~F02~~ | ~~Screen join via kode / deep link landing~~ ✅ Phase 3 — [app/grup/join.tsx](app/grup/join.tsx), deep link `arisan://join/{code}` di [app/\_layout.tsx](app/_layout.tsx) |
+| F06     | **Layer 2** — screen ketua approve setelah recipient setuju ([app/approval.tsx](app/approval.tsx) baru cover Layer 1)                                                     |
+| F13     | Privacy Policy in-app, Terms of Service in-app, Delete Account flow (wajib UU PDP & Play Store)                                                                           |
 
 ### 🟠 Gap interaksi/logic yang harus ditulis ulang saat wiring
 
@@ -1145,7 +1145,7 @@ Format kode: 5-7 char alphanumeric, generate di Cloud Function `createInviteCode
 | -------------------------------------------------- | -------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Scope creep** — FOMO tambah fitur Phase 2 ke MVP | Tinggi               | Tinggi | Strict P0 only. Setiap "kayanya perlu" → masuk backlog Phase 2, JANGAN langsung kode. Lihat §12 Out of Scope.                                               |
 | **Kompleksitas Cloud Functions** (tim baru)        | Sedang               | Sedang | Mulai dari `rateLimitOTP` (paling sederhana). Pakai Emulator untuk dev lokal. Code review wajib dari senior untuk function pertama tim.                     |
-| **OTP abuse** — Firebase bill membengkak           | Sedang               | Tinggi | `rateLimitOTP` Cloud Function max 5×/jam/nomor. Set budget alert di GCP Console: warn $50, kill switch $200.                                                |
+| **OTP abuse** — Firebase bill membengkak           | Sedang               | Tinggi | `rateLimitOTP` Cloud Function max 5×/jam/nomor. Set budget alert di GCP Console: warn $5, kill switch $200.                                                 |
 | **Race condition** swap/bayar                      | Sedang               | Tinggi | Wajib Firestore Transaction di semua Cloud Function aksi kritis. Test integration di Emulator.                                                              |
 | **Push notif tidak reliable**                      | Rendah (dengan v2.0) | Tinggi | Cloud Scheduler + dedup log. Monitor via event `notif_opened` vs jumlah sent. Target ≥ 95% delivery.                                                        |
 | **User resistance** — prefer WhatsApp              | Sedang               | Tinggi | Onboarding tekankan **transparansi** yang WA tidak bisa berikan. Test value-prop di closed beta.                                                            |

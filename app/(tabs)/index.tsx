@@ -1,25 +1,32 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Bell, Plus, Star } from 'lucide-react-native';
 import { Avatar, Badge, IconButton } from '@/components';
 import { avatarColor, colors, fonts, initials, money, radii, shadows } from '@/theme';
-import { GROUPS, Group } from '@/data/mock';
+import { useAuthStore } from '@/stores/auth';
+import { useGroupsStore, type GroupWithId } from '@/stores/groups';
 
 export default function DashboardScreen() {
-  const total = GROUPS.reduce((s, g) => s + g.iuran, 0);
+  const user = useAuthStore((s) => s.user);
+  const groups = useGroupsStore((s) => s.groups);
+  const loading = useGroupsStore((s) => s.loading);
+
+  const total = groups.reduce((s, g) => s + g.nominal, 0);
   useSafeAreaInsets();
+
+  const greetingName = user?.nama?.split(' ')[0] ?? '';
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Avatar name="Budi Santoso" size={44} />
+          <Avatar name={user?.nama ?? 'A'} size={44} />
           <View>
-            <Text style={styles.greeting}>Selamat pagi</Text>
-            <Text style={styles.hello}>Hai, Budi! 👋</Text>
+            <Text style={styles.greeting}>Selamat datang</Text>
+            <Text style={styles.hello}>Hai, {greetingName || 'Anggota'}! 👋</Text>
           </View>
         </View>
         <IconButton
@@ -43,41 +50,48 @@ export default function DashboardScreen() {
           <View style={styles.summaryRing} pointerEvents="none" />
           <View style={styles.summaryHeader}>
             <View style={styles.smallDot} />
-            <Text style={styles.summaryLabel}>3 Arisan Aktif</Text>
+            <Text style={styles.summaryLabel}>{groups.length} Arisan Aktif</Text>
           </View>
           <View style={{ marginTop: 12 }}>
-            <Text style={styles.summaryHint}>Iuran bulan ini</Text>
+            <Text style={styles.summaryHint}>Total iuran per periode</Text>
             <Text style={styles.summaryAmount}>{money(total)}</Text>
-          </View>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatLabel}>Lunas</Text>
-              <Text style={styles.summaryStatValue}>2 grup</Text>
-            </View>
-            <View style={styles.summaryStat}>
-              <Text style={styles.summaryStatLabel}>Belum bayar</Text>
-              <Text style={styles.summaryStatValue}>1 grup</Text>
-            </View>
           </View>
         </View>
 
         {/* Section header */}
         <View style={styles.sectionHead}>
           <Text style={styles.sectionTitle}>Grup arisan saya</Text>
-          <Text style={styles.sectionLink}>Lihat semua</Text>
+          <Pressable onPress={() => router.push('/grup/join')} hitSlop={8}>
+            <Text style={styles.sectionLink}>Gabung dengan kode</Text>
+          </Pressable>
         </View>
 
         {/* Groups */}
-        <View style={{ gap: 10 }}>
-          {GROUPS.map((g) => (
-            <GroupCard key={g.id} group={g} onPress={() => router.push(`/group/${g.id}`)} />
-          ))}
-        </View>
+        {loading ? (
+          <View style={styles.loaderBox}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : groups.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>Belum ada grup</Text>
+            <Text style={styles.emptyDesc}>
+              Tap + untuk buat grup pertama, atau gabung lewat kode dari ketua.
+            </Text>
+          </View>
+        ) : (
+          <View style={{ gap: 10 }}>
+            {groups.map((g) => (
+              <GroupCard key={g.id} group={g} onPress={() => router.push(`/group/${g.id}`)} />
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       {/* FAB */}
       <Pressable
-        onPress={() => {}}
+        onPress={() => router.push('/grup/baru')}
+        accessibilityLabel="Buat grup baru"
+        accessibilityRole="button"
         style={({ pressed }) => [
           styles.fab,
           { bottom: 16 },
@@ -91,8 +105,8 @@ export default function DashboardScreen() {
   );
 }
 
-function GroupCard({ group, onPress }: { group: Group; onPress: () => void }) {
-  const c = avatarColor(group.name);
+function GroupCard({ group, onPress }: { group: GroupWithId; onPress: () => void }) {
+  const c = avatarColor(group.nama);
   return (
     <Pressable
       onPress={onPress}
@@ -104,23 +118,27 @@ function GroupCard({ group, onPress }: { group: Group; onPress: () => void }) {
     >
       <View style={[styles.groupIcon, { backgroundColor: c.bg }]}>
         <Text style={[styles.groupIconText, { color: c.ink }]}>
-          {initials(group.name.replace(/^Arisan\s+/, ''))}
+          {initials(group.nama.replace(/^Arisan\s+/, ''))}
         </Text>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.groupNameRow}>
-          <Text style={styles.groupName}>{group.name}</Text>
-          {group.myTurn && (
+          <Text style={styles.groupName} numberOfLines={1}>
+            {group.nama}
+          </Text>
+          {/* myTurn akan derive dari member.giliran di phase 4-5. Sementara false. */}
+          {false && (
             <View style={styles.starWrap}>
               <Star size={11} color={colors.warning} fill={colors.warning} />
             </View>
           )}
         </View>
         <Text style={styles.groupMeta}>
-          Periode {group.period} · {money(group.iuran)}
+          Periode {group.periodeAktif}/{group.jumlahPeriode} · {money(group.nominal)}
         </Text>
       </View>
-      <Badge kind={group.status} />
+      {/* status pembayaran user di periode aktif akan derive di phase 4. */}
+      <Badge kind="Belum" />
     </Pressable>
   );
 }
@@ -204,28 +222,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.28,
     marginTop: 2,
   },
-  summaryGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 14,
-  },
-  summaryStat: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  summaryStatLabel: {
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  summaryStatValue: {
-    fontFamily: fonts.semibold,
-    fontSize: 15,
-    color: '#FFF',
-  },
 
   sectionHead: {
     flexDirection: 'row',
@@ -243,6 +239,33 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 13,
     color: colors.primary,
+  },
+
+  loaderBox: {
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyBox: {
+    backgroundColor: colors.card,
+    borderRadius: radii.cardLg,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  emptyTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    color: colors.text,
+  },
+  emptyDesc: {
+    marginTop: 6,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textSubtle,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 
   groupCard: {
@@ -273,6 +296,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 15,
     color: colors.text,
+    flexShrink: 1,
   },
   starWrap: {
     width: 18,

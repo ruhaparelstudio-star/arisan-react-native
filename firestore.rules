@@ -2,6 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isMember(groupId) {
+      return exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+    }
+
     // users — user only read/write own doc
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -11,6 +15,25 @@ service cloud.firestore {
     // otpQuota — DENY all client access (only Cloud Function via admin SDK)
     match /otpQuota/{phone} {
       allow read, write: if false;
+    }
+
+    // groups — anggota read, no client write (semua via Cloud Function)
+    match /groups/{groupId} {
+      allow read: if request.auth != null && isMember(groupId);
+      allow write: if false;
+
+      match /members/{memberId} {
+        // Membership doc readable oleh: anggota grup (untuk lihat daftar) atau
+        // user itu sendiri (untuk collectionGroup query discover grup).
+        allow read: if request.auth != null
+          && (memberId == request.auth.uid || isMember(groupId));
+        allow write: if false;
+      }
+
+      match /activityLog/{logId} {
+        allow read: if request.auth != null && isMember(groupId);
+        allow write, delete: if false; // append-only via Cloud Function
+      }
     }
 
     // Default deny — buka per-collection di phase berikutnya (PRD §7.1)

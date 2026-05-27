@@ -1,21 +1,8 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import {
-  ArrowLeftRight,
-  Lock,
-  Pencil,
-  Plus,
-} from 'lucide-react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { ArrowLeftRight, Lock, Pencil, Plus } from 'lucide-react-native';
 import { Button, Header, Toast } from '@/components';
 import { colors, fonts, radii, shadows } from '@/theme';
 
@@ -35,6 +22,8 @@ const MEMBERS_INITIAL: Member[] = [
 ];
 
 export default function PengaturanScreen() {
+  const params = useLocalSearchParams<{ id?: string }>();
+  const groupId = typeof params.id === 'string' ? params.id : null;
   const [groupName, setGroupName] = useState('Arisan RT 03');
   const [editingName, setEditingName] = useState(false);
   const [members, setMembers] = useState<Member[]>(MEMBERS_INITIAL);
@@ -87,10 +76,7 @@ export default function PengaturanScreen() {
               )
             }
             trailing={
-              <Pressable
-                onPress={() => setEditingName((v) => !v)}
-                style={styles.editBtn}
-              >
+              <Pressable onPress={() => setEditingName((v) => !v)} style={styles.editBtn}>
                 <Pencil size={16} color={colors.primary} strokeWidth={1.75} />
               </Pressable>
             }
@@ -102,7 +88,16 @@ export default function PengaturanScreen() {
 
         {/* Manajemen Anggota */}
         <SectionHeader>Manajemen Anggota</SectionHeader>
-        <Pressable style={styles.addBtn}>
+        <Pressable
+          style={styles.addBtn}
+          onPress={() => {
+            if (groupId) {
+              router.push(`/grup/${groupId}/invite`);
+            } else {
+              setToast('Buka pengaturan dari grup terkait untuk bagikan invite');
+            }
+          }}
+        >
           <Plus size={16} color={colors.primary} strokeWidth={2} />
           <Text style={styles.addBtnText}>Tambah Anggota via Link</Text>
         </Pressable>
@@ -132,9 +127,7 @@ export default function PengaturanScreen() {
         <Text style={styles.dangerSection}>Zona Berbahaya</Text>
         <View style={styles.dangerCard}>
           <Text style={styles.dangerTitle}>Bubarkan Grup</Text>
-          <Text style={styles.dangerDesc}>
-            Semua data akan diarsipkan. Tidak bisa dibatalkan.
-          </Text>
+          <Text style={styles.dangerDesc}>Semua data akan diarsipkan. Tidak bisa dibatalkan.</Text>
           <Pressable
             disabled={dissolved}
             onPress={() => setDissolveOpen(true)}
@@ -145,12 +138,7 @@ export default function PengaturanScreen() {
               },
             ]}
           >
-            <Text
-              style={[
-                styles.dangerBtnText,
-                dissolved && { color: '#A8A8A2' },
-              ]}
-            >
+            <Text style={[styles.dangerBtnText, dissolved && { color: '#A8A8A2' }]}>
               {dissolved ? 'Grup Terbubarkan' : 'Bubarkan Grup Arisan'}
             </Text>
           </Pressable>
@@ -230,24 +218,12 @@ function SettingsRow({
       <View style={{ flex: 1, alignItems: 'flex-end' }}>
         {valueNode ?? <Text style={styles.rowValue}>{valueText}</Text>}
       </View>
-      {locked ? (
-        <Lock size={16} color={colors.textDisabled} strokeWidth={1.75} />
-      ) : (
-        trailing
-      )}
+      {locked ? <Lock size={16} color={colors.textDisabled} strokeWidth={1.75} /> : trailing}
     </View>
   );
 }
 
-function MemberRow({
-  m,
-  last,
-  onDelete,
-}: {
-  m: Member;
-  last: boolean;
-  onDelete: () => void;
-}) {
+function MemberRow({ m, last, onDelete }: { m: Member; last: boolean; onDelete: () => void }) {
   return (
     <View
       style={[
@@ -257,9 +233,7 @@ function MemberRow({
     >
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.memberName}>{m.name}</Text>
-        <Text style={styles.memberSub}>
-          {m.role ? m.role : `Giliran #${m.period}`}
-        </Text>
+        <Text style={styles.memberSub}>{m.role ? m.role : `Giliran #${m.period}`}</Text>
       </View>
       {m.protected ? (
         <View style={styles.notDeletablePill}>
@@ -311,10 +285,7 @@ function ConfirmDialog({
           </Button>
           <Pressable
             onPress={onPrimary}
-            style={[
-              styles.primaryActionBtn,
-              { backgroundColor: primaryColor },
-            ]}
+            style={[styles.primaryActionBtn, { backgroundColor: primaryColor }]}
           >
             <Text style={styles.primaryActionText}>{primaryLabel}</Text>
           </Pressable>
@@ -324,13 +295,7 @@ function ConfirmDialog({
   );
 }
 
-function DissolveDialog({
-  onClose,
-  onConfirm,
-}: {
-  onClose: () => void;
-  onConfirm: () => void;
-}) {
+function DissolveDialog({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
   const [text, setText] = useState('');
   const ok = text.trim() === 'BUBARKAN';
 
@@ -344,17 +309,15 @@ function DissolveDialog({
           <View style={{ flex: 1 }}>
             <Text style={styles.dialogTitle}>Bubarkan grup ini?</Text>
             <Text style={styles.dialogSubtitle}>
-              Semua data akan diarsipkan dan anggota dikeluarkan. Tindakan ini
-              tidak bisa dibatalkan.
+              Semua data akan diarsipkan dan anggota dikeluarkan. Tindakan ini tidak bisa
+              dibatalkan.
             </Text>
           </View>
         </View>
 
         <View style={{ marginTop: 16 }}>
           <Text style={styles.dissolveLabel}>
-            Ketik{' '}
-            <Text style={styles.dissolveLabelMono}>BUBARKAN</Text> untuk
-            konfirmasi
+            Ketik <Text style={styles.dissolveLabelMono}>BUBARKAN</Text> untuk konfirmasi
           </Text>
           <TextInput
             autoFocus
@@ -363,10 +326,7 @@ function DissolveDialog({
             onChangeText={setText}
             placeholder="BUBARKAN"
             placeholderTextColor="#A8A8A2"
-            style={[
-              styles.dissolveInput,
-              ok && { borderColor: colors.danger },
-            ]}
+            style={[styles.dissolveInput, ok && { borderColor: colors.danger }]}
           />
         </View>
 
@@ -384,12 +344,7 @@ function DissolveDialog({
               },
             ]}
           >
-            <Text
-              style={[
-                styles.primaryActionText,
-                !ok && { color: '#A8A8A2' },
-              ]}
-            >
+            <Text style={[styles.primaryActionText, !ok && { color: '#A8A8A2' }]}>
               Bubarkan Permanen
             </Text>
           </Pressable>
