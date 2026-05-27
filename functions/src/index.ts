@@ -7,3 +7,5 @@ setGlobalOptions({ region: 'asia-southeast2', maxInstances: 10 });
 export const helloWorld = onCall((req) => {
   return { message: 'Hello from asia-southeast2', uid: req.auth?.uid ?? null };
 });
+
+export { rateLimitOTP } from './callable/rateLimitOTP';

@@ -1,0 +1,64 @@
+# Mirror .gitignore so EAS Build doesn't upload heavy/secret stuff,
+# but allow Firebase config files needed at build time.
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Env
+.env*
+!.env.example
+
+# macOS
+.DS_Store
+
+# Windows WSL alternate data streams
+*:Zone.Identifier
+
+# IDE
+.idea/
+
+# Firebase service account — NEVER upload
+service-account*.json
+
+# Firebase Console downloaded configs:
+# - Exclude contents of dev/ and prod/ by default
+# - EXCEPT google-services.json / GoogleService-Info.plist needed at gradle/xcode build
+/dev/*
+/prod/*
+!/dev/google-services.json
+!/dev/GoogleService-Info.plist
+!/prod/google-services.json
+!/prod/GoogleService-Info.plist
+
+# Cloud Functions build artifacts
+functions/lib/
+functions/node_modules/
+
+# Firebase Emulator
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+.firebase/
