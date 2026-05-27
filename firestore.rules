@@ -23,10 +23,8 @@ service cloud.firestore {
       allow write: if false;
 
       match /members/{memberId} {
-        // Membership doc readable oleh: anggota grup (untuk lihat daftar) atau
-        // user itu sendiri (untuk collectionGroup query discover grup).
-        allow read: if request.auth != null
-          && (memberId == request.auth.uid || isMember(groupId));
+        // Listing/get anggota dari dalam grup yang user ikuti.
+        allow read: if request.auth != null && isMember(groupId);
         allow write: if false;
       }
 
@@ -34,6 +32,14 @@ service cloud.firestore {
         allow read: if request.auth != null && isMember(groupId);
         allow write, delete: if false; // append-only via Cloud Function
       }
+    }
+
+    // CollectionGroup query: user discover grup yang dia ikuti via
+    // where('userId','==', auth.uid). Wildcard match WAJIB untuk collectionGroup
+    // (Firestore tidak konsisten match nested path untuk collectionGroup auth check).
+    match /{path=**}/members/{memberId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
     }
 
     // Default deny — buka per-collection di phase berikutnya (PRD §7.1)
