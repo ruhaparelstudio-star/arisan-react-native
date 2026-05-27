@@ -1,52 +1,110 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ChevronDown, X } from 'lucide-react-native';
 import { Button } from '@/components';
 import { colors, fonts, radii, shadows } from '@/theme';
+import { callable } from '@/services/firebase';
 
-type Option = { id: string; icon: string; title: string; desc: string };
+type Choice = 'random' | 'manual' | 'offline';
+type Option = { id: Choice; icon: string; title: string; desc: string };
 
-const OPTIONS: Option[] = [
-  {
-    id: 'random',
-    icon: '🎲',
-    title: 'Random otomatis',
-    desc: 'Sistem memilih secara acak dari anggota belum menang',
-  },
-  {
-    id: 'manual',
-    icon: '✋',
-    title: 'Assign manual',
-    desc: 'Ketua langsung menentukan pemenang',
-  },
-  {
-    id: 'offline',
-    icon: '📝',
-    title: 'Input hasil kocok offline',
-    desc: 'Catat hasil pengocokan fisik di lokasi',
-  },
-];
-
-type Props = {
-  onClose: () => void;
-  onConfirm: (winner: string) => void;
-  eligible: string[];
+const OPTION_RANDOM: Option = {
+  id: 'random',
+  icon: '🎲',
+  title: 'Random otomatis',
+  desc: 'Sistem memilih secara acak dari anggota belum menang',
+};
+const OPTION_MANUAL: Option = {
+  id: 'manual',
+  icon: '✋',
+  title: 'Assign manual',
+  desc: 'Ketua langsung menentukan pemenang (alasan wajib)',
+};
+const OPTION_OFFLINE: Option = {
+  id: 'offline',
+  icon: '📝',
+  title: 'Input hasil kocok offline',
+  desc: 'Catat hasil pengocokan fisik di lokasi (alasan wajib)',
 };
 
-export function UndianModal({ onClose, onConfirm, eligible }: Props) {
-  const [choice, setChoice] = useState('random');
+export type UndianModalEligible = { userId: string; nama: string };
+
+type Props = {
+  groupId: string;
+  periodeId: string; // padded "01", "02", ...
+  periodeNomor: number; // untuk display
+  eligibleMembers: UndianModalEligible[];
+  groupMode: 'mode1' | 'mode3';
+  onClose: () => void;
+  onSuccess?: (winnerNama: string) => void;
+  onError?: (msg: string) => void;
+};
+
+export function UndianModal({
+  groupId,
+  periodeId,
+  periodeNomor,
+  eligibleMembers,
+  groupMode,
+  onClose,
+  onSuccess,
+  onError,
+}: Props) {
+  // Mode 1: random tidak relevan (sudah preset), default ke manual.
+  const initialChoice: Choice = groupMode === 'mode1' ? 'manual' : 'random';
+  const [choice, setChoice] = useState<Choice>(initialChoice);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [winner, setWinner] = useState('');
+  const [winnerId, setWinnerId] = useState<string>('');
   const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const showInputs = choice === 'manual' || choice === 'offline';
-  const canConfirm = choice === 'random' ? true : winner.trim().length > 0;
+  const options = useMemo<Option[]>(
+    () =>
+      groupMode === 'mode1'
+        ? [OPTION_MANUAL, OPTION_OFFLINE]
+        : [OPTION_RANDOM, OPTION_MANUAL, OPTION_OFFLINE],
+    [groupMode],
+  );
 
-  const handleConfirm = () => {
+  const showInputs = choice !== 'random';
+  const selectedNama = eligibleMembers.find((m) => m.userId === winnerId)?.nama ?? '';
+
+  const canConfirm = (() => {
+    if (loading) return false;
+    if (choice === 'random') return true;
+    return winnerId.trim().length > 0 && note.trim().length > 0;
+  })();
+
+  const handleConfirm = async () => {
     if (!canConfirm) return;
-    const picked =
-      choice === 'random' ? eligible[Math.floor(Math.random() * eligible.length)] : winner.trim();
-    onConfirm(picked);
+    setLoading(true);
+    try {
+      const fn = callable<
+        {
+          groupId: string;
+          periodeId: string;
+          method: Choice;
+          manualWinnerId?: string;
+          alasan?: string;
+        },
+        { ok: boolean; winnerId: string; winnerNama: string }
+      >('triggerUndian');
+
+      const res = await fn({
+        groupId,
+        periodeId,
+        method: choice,
+        ...(choice !== 'random' && { manualWinnerId: winnerId, alasan: note.trim() }),
+      });
+
+      onSuccess?.(res.data.winnerNama);
+      onClose();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Gagal menjalankan undian';
+      onError?.(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,17 +117,29 @@ export function UndianModal({ onClose, onConfirm, eligible }: Props) {
               <Text style={{ fontSize: 20 }}>🎲</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.title}>Mulai Undian Periode 4</Text>
-              <Text style={styles.subtitle}>Tentukan siapa pemenang periode berikutnya</Text>
+              <Text style={styles.title}>
+                {groupMode === 'mode1' ? 'Override Pemenang' : 'Mulai Undian'} Periode{' '}
+                {periodeNomor}
+              </Text>
+              <Text style={styles.subtitle}>
+                {groupMode === 'mode1'
+                  ? 'Urutan Mode 1 sudah preset. Override hanya untuk kasus khusus.'
+                  : 'Tentukan siapa pemenang periode berikutnya'}
+              </Text>
             </View>
-            <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={6}>
+            <Pressable
+              onPress={onClose}
+              style={styles.closeBtn}
+              hitSlop={6}
+              accessibilityLabel="Tutup undian"
+            >
               <X size={16} color={colors.textMuted} strokeWidth={2.2} />
             </Pressable>
           </View>
 
           {/* Radio options */}
           <View style={{ gap: 8, marginTop: 16 }}>
-            {OPTIONS.map((o) => (
+            {options.map((o) => (
               <RadioCard
                 key={o.id}
                 option={o}
@@ -88,35 +158,35 @@ export function UndianModal({ onClose, onConfirm, eligible }: Props) {
                   onPress={() => setPickerOpen((v) => !v)}
                   style={[styles.picker, pickerOpen && { borderColor: colors.primary }]}
                 >
-                  <Text style={[styles.pickerText, !winner && { color: '#A8A8A2' }]}>
-                    {winner || 'Pilih anggota...'}
+                  <Text style={[styles.pickerText, !selectedNama && { color: '#A8A8A2' }]}>
+                    {selectedNama || 'Pilih anggota...'}
                   </Text>
                   <ChevronDown size={16} color={colors.textSubtle} strokeWidth={1.75} />
                 </Pressable>
                 {pickerOpen && (
                   <View style={[styles.dropdown, shadows.sheet]}>
-                    {eligible.map((n) => (
+                    {eligibleMembers.map((m) => (
                       <Pressable
-                        key={n}
+                        key={m.userId}
                         onPress={() => {
-                          setWinner(n);
+                          setWinnerId(m.userId);
                           setPickerOpen(false);
                         }}
                         style={[
                           styles.dropdownItem,
-                          winner === n && { backgroundColor: '#F8F7FE' },
+                          winnerId === m.userId && { backgroundColor: '#F8F7FE' },
                         ]}
                       >
                         <Text
                           style={[
                             styles.dropdownItemText,
-                            winner === n && {
+                            winnerId === m.userId && {
                               color: colors.primary,
                               fontFamily: fonts.semibold,
                             },
                           ]}
                         >
-                          {n}
+                          {m.nama}
                         </Text>
                       </Pressable>
                     ))}
@@ -125,7 +195,10 @@ export function UndianModal({ onClose, onConfirm, eligible }: Props) {
               </View>
 
               <View>
-                <Text style={styles.inputLabel}>Alasan / keterangan</Text>
+                <View style={styles.labelRow}>
+                  <Text style={styles.inputLabel}>Alasan</Text>
+                  <Text style={styles.labelWajib}>Wajib</Text>
+                </View>
                 <TextInput
                   value={note}
                   onChangeText={setNote}
@@ -143,7 +216,13 @@ export function UndianModal({ onClose, onConfirm, eligible }: Props) {
 
           {/* Buttons */}
           <View style={styles.actions}>
-            <Button variant="secondary" full style={{ flex: 1 }} onPress={onClose}>
+            <Button
+              variant="secondary"
+              full
+              style={{ flex: 1 }}
+              onPress={onClose}
+              disabled={loading}
+            >
               Batal
             </Button>
             <Button
@@ -153,7 +232,7 @@ export function UndianModal({ onClose, onConfirm, eligible }: Props) {
               disabled={!canConfirm}
               onPress={handleConfirm}
             >
-              Konfirmasi Undian
+              {loading ? 'Memproses...' : 'Konfirmasi Undian'}
             </Button>
           </View>
         </ScrollView>
@@ -307,11 +386,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
   inputLabel: {
     fontFamily: fonts.semibold,
     fontSize: 12,
     color: colors.text,
-    marginBottom: 6,
+  },
+  labelWajib: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.dangerInk,
+    backgroundColor: colors.dangerBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    letterSpacing: 0.3,
   },
   picker: {
     height: 42,

@@ -1,11 +1,23 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { X } from 'lucide-react-native';
+import { collection, doc, getDoc } from '@react-native-firebase/firestore';
 import { Button, IconButton } from '@/components';
-import { colors, fonts, radii, shadows } from '@/theme';
+import { colors, fonts, money, radii, shadows } from '@/theme';
+import { firestore } from '@/services/firebase';
+import { useAuthStore } from '@/stores/auth';
+import type { Group, Winner } from '@arisan/shared/types';
 
 const CONFETTI_COLORS = ['#7F77DD', '#1D9E75', '#BA7517', '#993C1D', '#4A43A8', '#FFC857'];
 
@@ -32,6 +44,75 @@ const CONFETTI: Confetto[] = Array.from({ length: 28 }, (_, i) => ({
 }));
 
 export default function WinnerScreen() {
+  const params = useLocalSearchParams<{ groupId?: string; periode?: string }>();
+  const user = useAuthStore((s) => s.user);
+  const [group, setGroup] = useState<Group | null>(null);
+  const [winner, setWinner] = useState<Winner | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!params.groupId || !params.periode) {
+      setError('Parameter tidak lengkap');
+      setLoading(false);
+      return;
+    }
+    const groupId = params.groupId;
+    const periodeId = params.periode;
+
+    (async () => {
+      try {
+        const db = firestore();
+        const groupRef = doc(collection(db, 'groups'), groupId);
+        const [groupSnap, winnerSnap] = await Promise.all([
+          getDoc(groupRef),
+          getDoc(doc(collection(groupRef, 'winners'), periodeId)),
+        ]);
+        if (!groupSnap.exists) {
+          setError('Grup tidak ditemukan');
+        } else if (!winnerSnap.exists) {
+          setError('Data pemenang belum ada');
+        } else {
+          setGroup({ id: groupSnap.id, ...(groupSnap.data() as Omit<Group, 'id'>) });
+          setWinner(winnerSnap.data() as Winner);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Gagal memuat data pemenang');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [params.groupId, params.periode]);
+
+  const isMe = !!user && !!winner && user.uid === winner.userId;
+  const total = useMemo(() => (group ? group.nominal * group.jumlahPeriode : 0), [group]);
+  const periodeNum = winner ? parseInt(winner.periodeId, 10) : 0;
+
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error || !group || !winner) {
+    return (
+      <SafeAreaView style={styles.errorWrap} edges={['top', 'bottom']}>
+        <View style={styles.topRow}>
+          <View style={{ flex: 1 }} />
+          <IconButton bg="rgba(255,255,255,0.7)" onPress={() => router.back()}>
+            <X size={18} color={colors.textBody} strokeWidth={1.75} />
+          </IconButton>
+        </View>
+        <View style={styles.errorBody}>
+          <Text style={styles.errorTitle}>Tidak bisa menampilkan pemenang</Text>
+          <Text style={styles.errorMsg}>{error ?? 'Data tidak tersedia'}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <LinearGradient
       colors={['#EFEDFB', '#F8F7FE', '#FFFFFF']}
@@ -39,12 +120,14 @@ export default function WinnerScreen() {
       locations={[0, 0.45, 1]}
     >
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-        {/* Confetti layer */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          {CONFETTI.map((c, i) => (
-            <ConfettoPiece key={i} c={c} />
-          ))}
-        </View>
+        {/* Confetti — hanya untuk pemenang */}
+        {isMe && (
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            {CONFETTI.map((c, i) => (
+              <ConfettoPiece key={i} c={c} />
+            ))}
+          </View>
+        )}
 
         {/* Close button */}
         <View style={styles.topRow}>
@@ -58,35 +141,63 @@ export default function WinnerScreen() {
         <View style={styles.hero}>
           <TrophyCircle />
 
-          <Text style={styles.title}>Selamat, Siti!</Text>
-          <Text style={styles.subtitle}>Kamu menang Arisan RT 03 periode 3</Text>
+          <Text style={styles.title}>
+            {isMe ? `Selamat, ${firstName(winner.nama)}!` : `Pemenang: ${winner.nama}`}
+          </Text>
+          <Text style={styles.subtitle}>
+            {isMe
+              ? `Kamu menang ${group.nama} periode ${periodeNum}`
+              : `${winner.nama} menang ${group.nama} periode ${periodeNum}`}
+          </Text>
 
           <View style={[styles.statCard, shadows.card]}>
-            <Stat label="Total" value="Rp 6jt" />
+            <Stat label="Total" value={money(total)} />
             <View style={styles.statDivider} />
-            <Stat label="Anggota" value="12" />
+            <Stat label="Anggota" value={String(group.jumlahPeriode)} />
             <View style={styles.statDivider} />
-            <Stat label="Periode" value="Juni '25" />
+            <Stat label="Periode" value={`${periodeNum}/${group.jumlahPeriode}`} />
           </View>
 
-          <View style={styles.warning}>
-            <Text style={{ fontSize: 18 }}>⏰</Text>
-            <Text style={styles.warningText}>Set tanggal dalam 3 hari</Text>
-          </View>
+          {isMe && (
+            <View style={styles.warning}>
+              <Text style={{ fontSize: 18 }}>⏰</Text>
+              <Text style={styles.warningText}>Set tanggal dalam 3 hari</Text>
+            </View>
+          )}
         </View>
 
         {/* Actions */}
         <View style={styles.actions}>
-          <Button full onPress={() => router.push('/set-date')}>
-            Set Tanggal Pelaksanaan
-          </Button>
-          <Pressable style={styles.laterBtn} onPress={() => router.back()} hitSlop={4}>
-            <Text style={styles.laterLabel}>Nanti saja</Text>
-          </Pressable>
+          {isMe ? (
+            <Button
+              full
+              onPress={() =>
+                router.push({
+                  pathname: '/set-date',
+                  params: { groupId: group.id, periode: winner.periodeId },
+                })
+              }
+            >
+              Set Tanggal Pelaksanaan
+            </Button>
+          ) : (
+            <Button full onPress={() => router.back()}>
+              Kembali
+            </Button>
+          )}
+          {isMe && (
+            <Pressable style={styles.laterBtn} onPress={() => router.back()} hitSlop={4}>
+              <Text style={styles.laterLabel}>Nanti saja</Text>
+            </Pressable>
+          )}
         </View>
       </SafeAreaView>
     </LinearGradient>
   );
+}
+
+function firstName(nama: string): string {
+  return nama.split(' ')[0] ?? nama;
 }
 
 function ConfettoPiece({ c }: { c: Confetto }) {
@@ -204,6 +315,26 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.page,
+  },
+  errorWrap: { flex: 1, backgroundColor: colors.page },
+  errorBody: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  errorTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 17,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  errorMsg: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
   topRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,

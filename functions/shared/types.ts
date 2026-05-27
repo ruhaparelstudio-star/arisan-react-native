@@ -30,3 +30,16 @@ export type Member = {
   jumlahTukar: number; // 0..2 (max 2 per PRD F06)
   joinedAt: number;
 };
+
+export type UndianMethod = 'random' | 'manual' | 'offline';
+
+export type Winner = {
+  periodeId: string; // "01", "02", ... padded
+  userId: string;
+  nama: string;
+  decidedAt: number;
+  method: UndianMethod;
+  decidedBy: string; // ketua userId
+  alasan?: string; // wajib jika method = manual/offline
+  // Untuk Mode 1 entries, decidedBy adalah ketua yang trigger generate, decidedAt sama untuk semua
+};
