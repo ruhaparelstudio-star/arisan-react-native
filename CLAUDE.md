@@ -9,10 +9,12 @@ Referensi lengkap: [Arisan_App_PRD_Final_v2.0.docx](Arisan_App_PRD_Final_v2.0.do
 ## Daftar Isi
 
 **Konteks & gap**
+
 - [§1 Status Saat Ini](#1-status-saat-ini)
 - [§1.5 Known Gaps & Mismatch dengan PRD ⚠️](#15-known-gaps--mismatch-dengan-prd-️)
 
 **Arsitektur**
+
 - [§2 Tech Stack](#2-tech-stack)
 - [§3 Struktur Folder](#3-struktur-folder)
 - [§4 Domain Model (Firestore)](#4-domain-model-firestore--sesuai-prd-63)
@@ -22,6 +24,7 @@ Referensi lengkap: [Arisan_App_PRD_Final_v2.0.docx](Arisan_App_PRD_Final_v2.0.do
 - [§7 Non-Functional Targets](#7-non-functional-targets)
 
 **Standar code & UI**
+
 - [§8 Design System](#8-design-system)
 - [§9 Bahasa & Lokalisasi](#9-bahasa--lokalisasi)
 - [§10 Konvensi Kode](#10-konvensi-kode)
@@ -29,9 +32,11 @@ Referensi lengkap: [Arisan_App_PRD_Final_v2.0.docx](Arisan_App_PRD_Final_v2.0.do
 - [§24 Accessibility Baseline](#24-accessibility-baseline)
 
 **Testing**
+
 - [§11 Testing](#11-testing-target-week-810)
 
 **Operations**
+
 - [§13 Setup & Cara Menjalankan](#13-setup--cara-menjalankan)
 - [§16 Build & Release](#16-build--release)
 - [§17 Environment & Secrets](#17-environment--secrets)
@@ -42,6 +47,7 @@ Referensi lengkap: [Arisan_App_PRD_Final_v2.0.docx](Arisan_App_PRD_Final_v2.0.do
 - [§25 App Assets & Deep Links](#25-app-assets--deep-links)
 
 **Scope, metrics, risk**
+
 - [§12 Out of Scope](#12-out-of-scope-jangan-disarankan-untuk-mvp)
 - [§14 OKR Validasi](#14-okr-validasi-3-bulan-pertama)
 - [§19 Production Readiness Checklist](#19-production-readiness-checklist-mirror-prd-11)
@@ -49,6 +55,7 @@ Referensi lengkap: [Arisan_App_PRD_Final_v2.0.docx](Arisan_App_PRD_Final_v2.0.do
 - [§27 Development Roadmap 10 Minggu](#27-development-roadmap-10-minggu--prd-9)
 
 **Reference**
+
 - [§15 Glosarium Singkat](#15-glosarium-singkat)
 
 ---
@@ -90,26 +97,24 @@ UI shell sekarang **bukan sekadar belum di-wire ke backend** — ada mismatch st
    - PRD §4.2 F04: alasan **WAJIB** tersimpan di `winners` + `activityLog`.
    - **Aksi:** `canConfirm = winner && note.trim().length > 0` untuk Manual/Offline.
 
-5. **Profil pakai email, bukan nomor HP** — [app/(tabs)/profil.tsx:75](app/(tabs)/profil.tsx#L75)
-   - PRD: identity = nomor HP +62, email tidak ada di domain model.
-   - **Aksi:** hapus field email, tambahkan field nomor HP (tidak ditampilkan ke anggota lain — data minimization).
+5. ~~**Profil pakai email, bukan nomor HP**~~ ✅ **FIXED Phase 2** — email dihapus, diganti masked phone `+62 ••• ••• {last4}` (hanya untuk konfirmasi diri sendiri, tidak ditampilkan ke anggota lain). Nama diambil dari `useAuthStore`, bukan hardcoded.
 
 ### 🟡 Screen PRD yang belum dibuat (wajib sebelum MVP)
 
-| PRD | Screen yang hilang |
-|-----|--------------------|
-| F01 | Splash → Input nomor HP (+62) → OTP input → first-run consent (Privacy + ToS) |
-| F02 | "Buat Grup" form (nama, nominal, frekuensi bulanan/mingguan, jumlah periode) — FAB di [app/(tabs)/index.tsx:99](app/(tabs)/index.tsx#L99) sudah ada tapi `onPress={() => {}}` |
-| F02 | Screen invite (generate kode unik + deep link share) — tombol di pengaturan tanpa handler |
-| F02 | Screen join via kode / deep link landing |
-| F06 | **Layer 2** — screen ketua approve setelah recipient setuju ([app/approval.tsx](app/approval.tsx) baru cover Layer 1) |
-| F13 | Privacy Policy in-app, Terms of Service in-app, Delete Account flow (wajib UU PDP & Play Store) |
+| PRD | Screen yang hilang                                                                                                                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F01 | Splash → Input nomor HP (+62) → OTP input → first-run consent (Privacy + ToS)                                                                                                   |
+| F02 | "Buat Grup" form (nama, nominal, frekuensi bulanan/mingguan, jumlah periode) — FAB di [app/(tabs)/index.tsx:99](<app/(tabs)/index.tsx#L99>) sudah ada tapi `onPress={() => {}}` |
+| F02 | Screen invite (generate kode unik + deep link share) — tombol di pengaturan tanpa handler                                                                                       |
+| F02 | Screen join via kode / deep link landing                                                                                                                                        |
+| F06 | **Layer 2** — screen ketua approve setelah recipient setuju ([app/approval.tsx](app/approval.tsx) baru cover Layer 1)                                                           |
+| F13 | Privacy Policy in-app, Terms of Service in-app, Delete Account flow (wajib UU PDP & Play Store)                                                                                 |
 
 ### 🟠 Gap interaksi/logic yang harus ditulis ulang saat wiring
 
 - **Calendar set-date**: [app/set-date.tsx:22-27](app/set-date.tsx#L22-L27) hardcoded `TODAY=12`, `Juni 2025`, `DAYS_IN_MONTH=30`. Navigation bulan tombolnya kosong. Saat wiring real date → hampir semua logic ditulis ulang pakai dayjs.
 - **Chat**: [src/screens/ChatTab.tsx](src/screens/ChatTab.tsx) pakai `ScrollView` static. PRD F07 minta **inverted FlatList + pagination 30/load + onSnapshot subscription**.
-- **Notif badge**: counter `3` hardcoded di [app/(tabs)/_layout.tsx:52](app/(tabs)/_layout.tsx#L52). Item notif "winner" di mock juga belum link ke [winner.tsx](app/winner.tsx).
+- **Notif badge**: counter `3` hardcoded di [app/(tabs)/\_layout.tsx:52](<app/(tabs)/_layout.tsx#L52>). Item notif "winner" di mock juga belum link ke [winner.tsx](app/winner.tsx).
 - **Pembayaran tab**: hardcoded periode 3 di [app/group/[id].tsx](app/group/%5Bid%5D.tsx) — belum ada period picker untuk navigasi periode lain.
 - **Konfirmasi pembayaran**: tombol di [app/group/[id].tsx:114](app/group/%5Bid%5D.tsx#L114) tanpa handler. Saat wiring: pilih per-anggota (bukan blanket), call Cloud Function `validatePayment` (bukan direct Firestore write).
 - **Pengaturan nominal/periode/tanggal mulai**: di-lock di UI ([app/pengaturan.tsx:98-100](app/pengaturan.tsx#L98-L100)). PRD tidak eksplisit larang edit — verifikasi ke product owner sebelum wire.
@@ -128,6 +133,7 @@ UI shell sekarang **bukan sekadar belum di-wire ke backend** — ada mismatch st
 ## 2. Tech Stack
 
 ### Saat ini (frontend shell)
+
 - **Expo SDK 54** (managed workflow) + **React Native 0.81** + **React 19**
 - **TypeScript strict** mode (`"strict": true` di [tsconfig.json](tsconfig.json))
 - **Expo Router** (file-based, typedRoutes enabled)
@@ -138,6 +144,7 @@ UI shell sekarang **bukan sekadar belum di-wire ke backend** — ada mismatch st
 - Path alias: `@/*` → `./src/*`
 
 ### Akan ditambahkan (sesuai PRD)
+
 - **`@react-native-firebase/*`** (native modules — bukan JS SDK)
   - `app`, `auth` (Phone OTP +62), `firestore`, `functions`, `crashlytics`, `perf`, `analytics`, `messaging`
   - **Konsekuensi**: harus pakai **`expo-dev-client`** (bukan Expo Go), build via EAS sekali per device
@@ -196,6 +203,7 @@ groups/{groupId}                                        ← nama, nominal, freku
 ```
 
 ### Role
+
 - **Ketua** — admin penuh: konfirmasi bayar, trigger undian, override tanggal, ubah setting, bubarkan grup
 - **Anggota** — read + limited write: lihat status, kirim chat, request tukar giliran
 
@@ -203,21 +211,21 @@ groups/{groupId}                                        ← nama, nominal, freku
 
 ## 5. Fitur MVP (Phase 1 + 1.5)
 
-| ID | Fitur | Catatan kritis |
-|----|-------|----------------|
-| F01 | Auth + OTP (+62) | Rate limit 5/jam/nomor via Cloud Function. First-run consent Privacy Policy & ToS |
-| F02 | Manajemen Grup | Buat, invite (kode/deeplink), join, dashboard |
-| F03 | Tracking Pembayaran | Belum bayar / Lunas / Terlambat (H+3). Reminder H-3/H-1/H-0 server-side |
-| F04 | Undian | Mode 1 (pre-determined) & Mode 3 (hybrid). **Random WAJIB server-side**, bukan `Math.random()` di client |
-| F05 | Set Tanggal | Min H+3, lock setelah konfirmasi, auto-notif ketua jika H+3 tidak set |
-| F06 | Tukar Giliran | **2-layer approval**: target setuju → ketua approve. Max 2x per anggota |
-| F07 | Group Chat | Real-time via `onSnapshot`, inverted FlatList, pagination 30, badge Ketua, system messages |
-| F08 | Activity Log | Append-only, filter tipe + timezone (WIB/WITA/WIT) |
-| F09 | Cloud Functions validation | `validatePayment`, `triggerUndian`, `approveSwap`, `rateLimitOTP` |
-| F10 | Cloud Scheduler reminders | `sendPaymentReminder`, `sendPelaksanaanReminder`, `checkTanggalDeadline` — cron 08.00 WIB |
-| F11 | Firestore Transactions | Semua aksi multi-dokumen kritis |
-| F12 | Crashlytics + Performance | Crash rate target < 1%, P95 load < 3s |
-| F13 | Legal & Compliance | Privacy Policy + ToS in-app, data deletion flow (UU PDP 27/2022), region Jakarta |
+| ID  | Fitur                      | Catatan kritis                                                                                           |
+| --- | -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| F01 | Auth + OTP (+62)           | Rate limit 5/jam/nomor via Cloud Function. First-run consent Privacy Policy & ToS                        |
+| F02 | Manajemen Grup             | Buat, invite (kode/deeplink), join, dashboard                                                            |
+| F03 | Tracking Pembayaran        | Belum bayar / Lunas / Terlambat (H+3). Reminder H-3/H-1/H-0 server-side                                  |
+| F04 | Undian                     | Mode 1 (pre-determined) & Mode 3 (hybrid). **Random WAJIB server-side**, bukan `Math.random()` di client |
+| F05 | Set Tanggal                | Min H+3, lock setelah konfirmasi, auto-notif ketua jika H+3 tidak set                                    |
+| F06 | Tukar Giliran              | **2-layer approval**: target setuju → ketua approve. Max 2x per anggota                                  |
+| F07 | Group Chat                 | Real-time via `onSnapshot`, inverted FlatList, pagination 30, badge Ketua, system messages               |
+| F08 | Activity Log               | Append-only, filter tipe + timezone (WIB/WITA/WIT)                                                       |
+| F09 | Cloud Functions validation | `validatePayment`, `triggerUndian`, `approveSwap`, `rateLimitOTP`                                        |
+| F10 | Cloud Scheduler reminders  | `sendPaymentReminder`, `sendPelaksanaanReminder`, `checkTanggalDeadline` — cron 08.00 WIB                |
+| F11 | Firestore Transactions     | Semua aksi multi-dokumen kritis                                                                          |
+| F12 | Crashlytics + Performance  | Crash rate target < 1%, P95 load < 3s                                                                    |
+| F13 | Legal & Compliance         | Privacy Policy + ToS in-app, data deletion flow (UU PDP 27/2022), region Jakarta                         |
 
 ---
 
@@ -226,31 +234,35 @@ groups/{groupId}                                        ← nama, nominal, freku
 Push notif **selalu dipicu dari Cloud Functions / Cloud Scheduler** — tidak pernah dari client.
 
 ### Token lifecycle
+
 1. **Register** — setelah login OTP sukses, panggil `Notifications.getExpoPushTokenAsync()`. Tulis ke `users/{userId}.expoPushToken` + `tokenUpdatedAt` (server timestamp).
 2. **Refresh** — pada app start, jika token berubah dari yang tersimpan → update Firestore. Listener `addPushTokenListener` untuk auto-refresh.
 3. **Revoke** — saat logout / delete account, set `expoPushToken = null` di Firestore (bukan delete dokumen — append-only spirit).
 4. **Multi-device** — MVP: 1 device per user (overwrite token lama). Phase 2: array of tokens.
 
 ### Permission flow
+
 - iOS: request permission saat pertama buka app **setelah** consent screen (jangan sebelum), berikan konteks ("Untuk reminder bayar dan pengumuman pemenang").
 - Android 13+: request `POST_NOTIFICATIONS` runtime permission.
 - Jika user deny: tampilkan banner non-blocking di Beranda dengan link ke Settings OS.
 
 ### Sending (dari Cloud Function)
+
 - Pakai Expo Push API server-side (`https://exp.host/--/api/v2/push/send`) atau Firebase Admin SDK FCM langsung.
 - **Deduplication**: simpan `notifLog/{userId}_{type}_{date}` di Firestore dengan TTL 24h — cek dulu sebelum kirim. PRD §8.1: "tidak ada duplicate notification untuk satu anggota di hari yang sama".
-- Payload include `data.route` untuk deep link (mis. `arisan://group/rt03?tab=urutan`) — handle di [app/_layout.tsx](app/_layout.tsx) dengan `Linking.addEventListener`.
+- Payload include `data.route` untuk deep link (mis. `arisan://group/rt03?tab=urutan`) — handle di [app/\_layout.tsx](app/_layout.tsx) dengan `Linking.addEventListener`.
 
 ### Notif types & deep targets
-| Type | Trigger | Deep link |
-|------|---------|-----------|
-| `winner` | `triggerUndian` selesai | `arisan://winner?groupId=X&periode=Y` |
-| `payment-reminder` | Cloud Scheduler H-3/H-1/H-0 | `arisan://group/X?tab=pembayaran` |
-| `payment-confirmed` | `validatePayment` sukses | `arisan://riwayat?groupId=X` |
-| `swap-request` | `requestSwap` (recipient) | `arisan://approval?requestId=X` |
-| `swap-approved` | `approveSwap` selesai | `arisan://group/X?tab=urutan` |
-| `pelaksanaan-reminder` | Cloud Scheduler H-3/H-1/H-0 | `arisan://group/X?tab=urutan` |
-| `tanggal-overdue` | `checkTanggalDeadline` (ketua) | `arisan://group/X?tab=urutan` |
+
+| Type                   | Trigger                        | Deep link                             |
+| ---------------------- | ------------------------------ | ------------------------------------- |
+| `winner`               | `triggerUndian` selesai        | `arisan://winner?groupId=X&periode=Y` |
+| `payment-reminder`     | Cloud Scheduler H-3/H-1/H-0    | `arisan://group/X?tab=pembayaran`     |
+| `payment-confirmed`    | `validatePayment` sukses       | `arisan://riwayat?groupId=X`          |
+| `swap-request`         | `requestSwap` (recipient)      | `arisan://approval?requestId=X`       |
+| `swap-approved`        | `approveSwap` selesai          | `arisan://group/X?tab=urutan`         |
+| `pelaksanaan-reminder` | Cloud Scheduler H-3/H-1/H-0    | `arisan://group/X?tab=urutan`         |
+| `tanggal-overdue`      | `checkTanggalDeadline` (ketua) | `arisan://group/X?tab=urutan`         |
 
 ---
 
@@ -264,6 +276,7 @@ Push notif **selalu dipicu dari Cloud Functions / Cloud Scheduler** — tidak pe
 6. **Least privilege** — user hanya bisa read data grup yang dia ikuti.
 
 ### Anti-pattern yang harus dihindari
+
 - ❌ `Math.random()` di client untuk pilih pemenang
 - ❌ Direct `setDoc` / `updateDoc` dari client ke collection kritis
 - ❌ Scheduling notifikasi di client side (notif harus terkirim meski user tidak buka app)
@@ -274,15 +287,15 @@ Push notif **selalu dipicu dari Cloud Functions / Cloud Scheduler** — tidak pe
 
 ## 7. Non-Functional Targets
 
-| Kategori | Target |
-|----------|--------|
-| Load dashboard | < 2 detik di 4G |
-| Real-time update bayar | < 1 detik latency |
-| Uptime | 99.5% (Firebase SLA) |
-| Crash rate | < 1% |
-| P95 screen load | < 3 detik |
-| Android support | API 26+ (Android 8.0+) |
-| iOS support | iOS 13+ |
+| Kategori               | Target                 |
+| ---------------------- | ---------------------- |
+| Load dashboard         | < 2 detik di 4G        |
+| Real-time update bayar | < 1 detik latency      |
+| Uptime                 | 99.5% (Firebase SLA)   |
+| Crash rate             | < 1%                   |
+| P95 screen load        | < 3 detik              |
+| Android support        | API 26+ (Android 8.0+) |
+| iOS support            | iOS 13+                |
 
 ---
 
@@ -316,7 +329,7 @@ Saat menambah UI baru, **selalu pakai token dari `src/theme`** — jangan hardco
 - **User preference**: simpan `users/{userId}.timezone` saat register (`Asia/Jakarta` | `Asia/Makassar` | `Asia/Jayapura`). Default ambil dari device.
 - **Activity log**: tampilkan eksplisit suffix zona (`12 Jun 2025, 14:30 WIB`) — beda timezone user di grup yang sama bisa render beda, tapi UTC yang disimpan sama.
 - **Cron jobs**: Cloud Scheduler config explicit `timezone: "Asia/Jakarta"` (cron jam 08.00 WIB). Jangan mix dengan default UTC.
-- **Setup dayjs**: `dayjs.extend(utc); dayjs.extend(timezone); dayjs.extend(localizedFormat); dayjs.locale('id');` di [app/_layout.tsx](app/_layout.tsx) — satu kali untuk seluruh app.
+- **Setup dayjs**: `dayjs.extend(utc); dayjs.extend(timezone); dayjs.extend(localizedFormat); dayjs.locale('id');` di [app/\_layout.tsx](app/_layout.tsx) — satu kali untuk seluruh app.
 
 ---
 
@@ -334,15 +347,16 @@ Saat menambah UI baru, **selalu pakai token dari `src/theme`** — jangan hardco
 
 ## 11. Testing (target Week 8–10)
 
-| Layer | Tool | Coverage |
-|-------|------|----------|
-| Unit | Jest | > 80% functions kritis (logic undian, validasi swap, kalkulasi status) |
-| Firestore Rules | Firebase Emulator | 100% rules per role per collection |
-| Integration | Jest + Emulator | > 70% happy + error path Cloud Functions |
-| E2E | Detox | 5 core flows: Register → Buat Grup → Bayar → Undian → Set Tanggal |
-| Manual | Device fisik | Min 3 device Android, 2 device iOS |
+| Layer           | Tool              | Coverage                                                               |
+| --------------- | ----------------- | ---------------------------------------------------------------------- |
+| Unit            | Jest              | > 80% functions kritis (logic undian, validasi swap, kalkulasi status) |
+| Firestore Rules | Firebase Emulator | 100% rules per role per collection                                     |
+| Integration     | Jest + Emulator   | > 70% happy + error path Cloud Functions                               |
+| E2E             | Detox             | 5 core flows: Register → Buat Grup → Bayar → Undian → Set Tanggal      |
+| Manual          | Device fisik      | Min 3 device Android, 2 device iOS                                     |
 
 ### Test cases wajib (PRD §8.1)
+
 - Random undian **tidak pernah** memilih anggota `sudahMenang=true`
 - Anggota **tidak bisa** write `payments` (rules deny)
 - Anggota **tidak bisa** delete `activityLog` (rules deny)
@@ -354,6 +368,7 @@ Saat menambah UI baru, **selalu pakai token dari `src/theme`** — jangan hardco
 ## 12. Out of Scope (jangan disarankan untuk MVP)
 
 **Permanen out of scope:**
+
 - Payment gateway (GoPay/OVO/DANA/transfer) — butuh lisensi fintech OJK
 - Notifikasi WhatsApp API
 - Web version
@@ -433,13 +448,13 @@ eas build --profile production --platform all        # Production release
 
 ## 14. OKR Validasi (3 bulan pertama)
 
-| KR | Target |
-|----|--------|
+| KR                             | Target  |
+| ------------------------------ | ------- |
 | Grup aktif terdaftar (30 hari) | 50 grup |
-| Rata-rata anggota per grup | 8+ |
-| Retention setelah 2 periode | 70%+ |
-| NPS | 40+ |
-| Crash rate bulan 1 | < 1% |
+| Rata-rata anggota per grup     | 8+      |
+| Retention setelah 2 periode    | 70%+    |
+| NPS                            | 40+     |
+| Crash rate bulan 1             | < 1%    |
 
 ---
 
@@ -460,13 +475,14 @@ eas build --profile production --platform all        # Production release
 
 ### 16.1 EAS profiles ([eas.json](eas.json))
 
-| Profile | Distribution | Untuk |
-|---------|--------------|-------|
-| `development` | Internal (dev client) | Day-to-day dev dengan custom native modules |
-| `preview` | Internal (APK / TestFlight) | QA, closed beta 10 grup (PRD §11) |
-| `production` | Store (AAB / IPA) | Play Store & App Store |
+| Profile       | Distribution                | Untuk                                       |
+| ------------- | --------------------------- | ------------------------------------------- |
+| `development` | Internal (dev client)       | Day-to-day dev dengan custom native modules |
+| `preview`     | Internal (APK / TestFlight) | QA, closed beta 10 grup (PRD §11)           |
+| `production`  | Store (AAB / IPA)           | Play Store & App Store                      |
 
 Minimal `eas.json` yang harus ada:
+
 ```json
 {
   "build": {
@@ -491,7 +507,7 @@ Minimal `eas.json` yang harus ada:
 
 ### 16.3 Closed beta (Week 10 — PRD §11)
 
-- Target: **10 grup arisan nyata** (bukan internal team). 
+- Target: **10 grup arisan nyata** (bukan internal team).
 - Distribusi APK: Play Console Internal Testing track + TestFlight invite.
 - Durasi minimum: 2 minggu = 1 siklus periode arisan, biar cover flow Bayar → Undian → Set Tanggal.
 - Exit criteria: zero P0/P1 bug + crash rate < 1% + 8/10 grup completion siklus.
@@ -527,27 +543,28 @@ Minimal `eas.json` yang harus ada:
 
 ### 17.1 Firebase projects
 
-| Project ID | Tujuan | Region |
-|------------|--------|--------|
-| `arisan-dev` | Day-to-day dev + closed beta | `asia-southeast2` (Jakarta) |
-| `arisan-prod` | Production live | `asia-southeast2` (Jakarta) |
+| Project ID    | Tujuan                       | Region                      |
+| ------------- | ---------------------------- | --------------------------- |
+| `arisan-dev`  | Day-to-day dev + closed beta | `asia-southeast2` (Jakarta) |
+| `arisan-prod` | Production live              | `asia-southeast2` (Jakarta) |
 
 Jangan share Firestore antara dev & prod. Auth users juga terpisah (nomor HP test berbeda).
 
 ### 17.2 File config
 
-| File | Lokasi | Commit? | Isi |
-|------|--------|---------|-----|
-| `.env.local` | root | ❌ `.gitignore` | Local override (EXPO_PUBLIC_USE_FIREBASE_EMULATOR, dst) |
-| `.env.example` | root | ✅ commit | Template tanpa value asli |
-| `google-services.json` | root | ❌ `.gitignore` | Firebase Android config — download dari Console |
-| `GoogleService-Info.plist` | root | ❌ `.gitignore` | Firebase iOS config — download dari Console |
-| `functions/.env` | `functions/` | ❌ `.gitignore` | Cloud Functions env (Expo push token, secret keys) |
-| Service Account JSON | **JANGAN COMMIT** | ❌ | Disimpan di EAS Secret + GitHub Secrets (CI/CD) |
+| File                       | Lokasi            | Commit?         | Isi                                                     |
+| -------------------------- | ----------------- | --------------- | ------------------------------------------------------- |
+| `.env.local`               | root              | ❌ `.gitignore` | Local override (EXPO_PUBLIC_USE_FIREBASE_EMULATOR, dst) |
+| `.env.example`             | root              | ✅ commit       | Template tanpa value asli                               |
+| `google-services.json`     | root              | ❌ `.gitignore` | Firebase Android config — download dari Console         |
+| `GoogleService-Info.plist` | root              | ❌ `.gitignore` | Firebase iOS config — download dari Console             |
+| `functions/.env`           | `functions/`      | ❌ `.gitignore` | Cloud Functions env (Expo push token, secret keys)      |
+| Service Account JSON       | **JANGAN COMMIT** | ❌              | Disimpan di EAS Secret + GitHub Secrets (CI/CD)         |
 
 ### 17.3 Expo public env vars
 
 Prefix `EXPO_PUBLIC_*` ter-bundle ke client → **jangan masukkan secret**, hanya config publik:
+
 - `EXPO_PUBLIC_FIREBASE_PROJECT` (dev / prod)
 - `EXPO_PUBLIC_USE_FIREBASE_EMULATOR` (true / false)
 - `EXPO_PUBLIC_SENTRY_DSN` (kalau pakai)
@@ -617,22 +634,22 @@ export const validatePayment = onCall(
   async (req) => {
     // 1. Auth check
     if (!req.auth) throw new HttpsError('unauthenticated', '...');
-    
+
     // 2. Validate input dengan zod
     const data = ValidatePaymentSchema.parse(req.data);
-    
+
     // 3. Authorization (role check)
     await assertKetua(req.auth.uid, data.groupId);
-    
+
     // 4. Business logic dalam transaction
     await db.runTransaction(async (tx) => { ... });
-    
+
     // 5. Append ke activityLog (selalu)
     await appendActivityLog({ ... });
-    
+
     // 6. Trigger notif (jika perlu)
     await sendNotif({ ... });
-    
+
     return { ok: true };
   }
 );
@@ -663,25 +680,30 @@ PRD eksplisit warning: "Kompleksitas Cloud Functions baru bagi tim". Urutan impl
 Centang sebelum submit ke store. Sumber: PRD §11.
 
 **SECURITY**
+
 - [ ] Cloud Functions untuk `validatePayment`, `triggerUndian`, `approveSwap` deployed
 - [ ] `rateLimitOTP` aktif (max 5/jam/nomor)
 - [ ] Firestore Security Rules test suite 100% coverage di Emulator
 - [ ] Firestore Transactions di semua aksi atomic (swap, bayar, undian)
 
 **NOTIFICATIONS**
+
 - [ ] `sendPaymentReminder` cron 08.00 WIB aktif
 - [ ] `sendPelaksanaanReminder` cron aktif
 - [ ] `checkTanggalDeadline` cron aktif
 
 **MONITORING**
+
 - [ ] Firebase Crashlytics terintegrasi + alert crash rate > 1%
 - [ ] Firebase Performance Monitoring aktif (P95 < 3s)
 
 **TESTING**
+
 - [ ] Unit test Jest > 80% coverage functions kritis
 - [ ] E2E Detox: Register → Buat Grup → Bayar → Undian → Set Tanggal pass
 
 **LEGAL & COMPLIANCE**
+
 - [ ] Privacy Policy in-app (accessible dari Settings)
 - [ ] Terms of Service in-app
 - [ ] Delete Account flow berfungsi (anonymize / hard delete sesuai UU PDP)
@@ -689,6 +711,7 @@ Centang sebelum submit ke store. Sumber: PRD §11.
 - [ ] IARC Content Rating filled (Play Console + App Store Connect)
 
 **BUILD & RELEASE**
+
 - [ ] EAS Build Android APK preview profile sukses, test di 3 device
 - [ ] EAS Build iOS TestFlight sukses, test di 2 device
 - [ ] Closed beta 10 grup arisan nyata selesai, zero critical bug
@@ -704,7 +727,11 @@ Target user: 80% Android di koneksi 4G urban Indonesia — koneksi spotty adalah
 Aktifkan di [src/services/firebase.ts](src/services/firebase.ts):
 
 ```ts
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore';
 
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
@@ -728,20 +755,22 @@ NetInfo.addEventListener((state) => {
 
 ### 20.3 UX pattern per state
 
-| State | UI behavior |
-|-------|-------------|
-| **Online** | Normal — semua tombol aktif |
-| **Offline (cache hit)** | Banner kecil di top: "🔌 Mode offline — data terakhir tersinkron 5 menit lalu". Read tetap jalan dari cache. |
+| State                          | UI behavior                                                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| **Online**                     | Normal — semua tombol aktif                                                                                  |
+| **Offline (cache hit)**        | Banner kecil di top: "🔌 Mode offline — data terakhir tersinkron 5 menit lalu". Read tetap jalan dari cache. |
 | **Offline (action attempted)** | Disable tombol Konfirmasi Pembayaran / Trigger Undian / Approve Swap. Toast: "Butuh koneksi untuk aksi ini." |
-| **Reconnect** | Banner success 2 detik: "✅ Tersambung kembali" lalu auto-hide. Trigger refetch listener. |
+| **Reconnect**                  | Banner success 2 detik: "✅ Tersambung kembali" lalu auto-hide. Trigger refetch listener.                    |
 
 ### 20.4 Optimistic UI policy
 
 **Boleh optimistic** (instant feedback, rollback kalau gagal):
+
 - Kirim chat message (PRD F07 — chat boleh sedikit lag)
 - Mark notif as read
 
 **JANGAN optimistic** (wajib server confirm dulu):
+
 - Konfirmasi pembayaran — finansial, harus tunggu Cloud Function response
 - Trigger undian — wajib server random
 - Approve swap — atomic 2-layer
@@ -756,6 +785,7 @@ NetInfo.addEventListener((state) => {
 ### 20.6 Testing offline (wajib PRD §8)
 
 Skenario manual yang harus pass:
+
 1. Buka app dengan airplane mode → dashboard tetap tampil dari cache
 2. Bayar saat offline → tombol disabled, toast jelas
 3. Kirim chat saat offline → pesan masuk queue, kirim saat reconnect
@@ -767,31 +797,35 @@ Skenario manual yang harus pass:
 
 ### 21.1 Error tracking — 2 layer
 
-| Tool | Cakupan | Setup |
-|------|---------|-------|
-| **Firebase Crashlytics** | Native crash (iOS/Android) | `@react-native-firebase/crashlytics` |
-| **Sentry** (opsional) | JS error + breadcrumb | `@sentry/react-native`, DSN di `EXPO_PUBLIC_SENTRY_DSN` |
+| Tool                     | Cakupan                    | Setup                                                   |
+| ------------------------ | -------------------------- | ------------------------------------------------------- |
+| **Firebase Crashlytics** | Native crash (iOS/Android) | `@react-native-firebase/crashlytics`                    |
+| **Sentry** (opsional)    | JS error + breadcrumb      | `@sentry/react-native`, DSN di `EXPO_PUBLIC_SENTRY_DSN` |
 
 Kalau pilih Sentry: capture user context (`userId`, `role`, `groupId` saat dalam grup) — JANGAN log nomor HP atau nama (PII).
 
 ### 21.2 Logging convention
 
 **Client (React Native)**:
+
 ```ts
 // src/lib/logger.ts
 export const log = {
   info: (msg: string, meta?: object) => __DEV__ && console.log(`[INFO] ${msg}`, meta),
-  warn: (msg: string, meta?: object) => Sentry.captureMessage(msg, { level: 'warning', extra: meta }),
+  warn: (msg: string, meta?: object) =>
+    Sentry.captureMessage(msg, { level: 'warning', extra: meta }),
   error: (err: Error, meta?: object) => Sentry.captureException(err, { extra: meta }),
 };
 ```
 
 Rules:
+
 - `__DEV__` only untuk `console.log` — production bundle harus bersih dari debug log
 - Jangan log payload lengkap (nomor HP, token) — log identifier saja
 - Sentry breadcrumb untuk navigation & button press otomatis via `routingInstrumentation`
 
 **Cloud Functions** — structured JSON log:
+
 ```ts
 import { logger } from 'firebase-functions/v2';
 
@@ -807,20 +841,21 @@ Pakai **Firebase Analytics** — gratis, terintegrasi dengan Crashlytics & Perfo
 
 Event taxonomy minimum untuk validasi OKR:
 
-| Event | Trigger | Properties | OKR target |
-|-------|---------|------------|------------|
-| `group_created` | Buat grup sukses | `frekuensi`, `jumlahPeriode`, `nominal` | KR1: 50 grup/30 hari |
-| `group_joined` | Join via kode/link | `via` (code/link) | KR2: 8+ anggota/grup |
-| `payment_confirmed` | Cloud Function sukses | `groupId`, `periodeId`, `late` (bool) | DAU/MAU 40% |
-| `undian_triggered` | Cloud Function sukses | `mode` (1/3), `method` (random/manual/offline) | — |
-| `winner_set_tanggal` | Set tanggal sukses | `daysFromWin` | — |
-| `swap_requested` | Layer 1 trigger | `groupId` | — |
-| `swap_approved` | Layer 2 done | `groupId`, `daysToComplete` | — |
-| `chat_message_sent` | Send message | `groupId`, `length` (bucketed) | 5+ pesan/grup/periode |
-| `notif_opened` | Tap push notif | `type` | 70%+ buka notif |
-| `app_opened` | App foreground | `from` (push/icon/deeplink) | DAU/MAU |
+| Event                | Trigger               | Properties                                     | OKR target            |
+| -------------------- | --------------------- | ---------------------------------------------- | --------------------- |
+| `group_created`      | Buat grup sukses      | `frekuensi`, `jumlahPeriode`, `nominal`        | KR1: 50 grup/30 hari  |
+| `group_joined`       | Join via kode/link    | `via` (code/link)                              | KR2: 8+ anggota/grup  |
+| `payment_confirmed`  | Cloud Function sukses | `groupId`, `periodeId`, `late` (bool)          | DAU/MAU 40%           |
+| `undian_triggered`   | Cloud Function sukses | `mode` (1/3), `method` (random/manual/offline) | —                     |
+| `winner_set_tanggal` | Set tanggal sukses    | `daysFromWin`                                  | —                     |
+| `swap_requested`     | Layer 1 trigger       | `groupId`                                      | —                     |
+| `swap_approved`      | Layer 2 done          | `groupId`, `daysToComplete`                    | —                     |
+| `chat_message_sent`  | Send message          | `groupId`, `length` (bucketed)                 | 5+ pesan/grup/periode |
+| `notif_opened`       | Tap push notif        | `type`                                         | 70%+ buka notif       |
+| `app_opened`         | App foreground        | `from` (push/icon/deeplink)                    | DAU/MAU               |
 
 **User properties** (set sekali per session):
+
 - `role_primary` — `ketua` / `anggota` (tergantung role utama user)
 - `groups_count` — jumlah grup yang diikuti
 - `timezone` — `WIB` / `WITA` / `WIT`
@@ -828,6 +863,7 @@ Event taxonomy minimum untuk validasi OKR:
 ### 21.4 NPS survey
 
 PRD §1.4 KR4: NPS 40+. Implement in-app NPS:
+
 - Trigger: setelah 2× completion siklus arisan (event `winner_set_tanggal` count ≥ 2)
 - Tool: pakai Firebase In-App Messaging atau simple modal sendiri
 - Simpan response di `nps/{userId}_{periode}` di Firestore
@@ -844,13 +880,13 @@ PRD §1.4 KR4: NPS 40+. Implement in-app NPS:
 
 ### 22.1 Tooling baseline
 
-| Tool | Purpose | Config file |
-|------|---------|-------------|
-| **ESLint** | Lint errors | `.eslintrc.cjs` |
-| **Prettier** | Formatting | `.prettierrc` |
-| **lint-staged** | Run linter pre-commit | `.lintstagedrc.json` |
-| **Husky** | Git hooks | `.husky/` |
-| **TypeScript** | Type check | `tsconfig.json` (sudah ada, strict ✅) |
+| Tool            | Purpose               | Config file                            |
+| --------------- | --------------------- | -------------------------------------- |
+| **ESLint**      | Lint errors           | `.eslintrc.cjs`                        |
+| **Prettier**    | Formatting            | `.prettierrc`                          |
+| **lint-staged** | Run linter pre-commit | `.lintstagedrc.json`                   |
+| **Husky**       | Git hooks             | `.husky/`                              |
+| **TypeScript**  | Type check            | `tsconfig.json` (sudah ada, strict ✅) |
 
 ### 22.2 Install
 
@@ -946,12 +982,15 @@ chore(deps): bump expo to 54.0.35
 
 ```markdown
 ## Apa yang berubah
+
 <jelaskan dalam 2-3 kalimat>
 
 ## PRD reference
+
 F0X — link section atau acceptance criteria
 
 ## Checklist
+
 - [ ] Sesuai design system token (warna/font dari src/theme)
 - [ ] Bahasa Indonesia di UI
 - [ ] No `Math.random()` di client untuk aksi kritis
@@ -960,12 +999,14 @@ F0X — link section atau acceptance criteria
 - [ ] Test manual di device fisik (sebutkan: Android X / iOS Y)
 
 ## Screenshot / video
+
 <jika UI change>
 ```
 
 ### 23.4 GitHub Actions (`.github/workflows/`)
 
 **ci.yml** — run di setiap PR:
+
 ```yaml
 name: CI
 on: [pull_request]
@@ -992,6 +1033,7 @@ jobs:
 ```
 
 **deploy-functions.yml** — manual trigger atau push ke `release/*`:
+
 ```yaml
 name: Deploy Functions
 on:
@@ -1055,33 +1097,33 @@ Minimum untuk MVP — target audience 25–45 tahun, banyak yang menggunakan uku
 
 ### 25.1 Assets yang harus disiapkan
 
-| Asset | Lokasi | Spec |
-|-------|--------|------|
-| App icon (iOS) | `assets/icon.png` | 1024×1024 PNG, no alpha, no rounded corners (iOS handle) |
-| App icon (Android adaptive) | `assets/adaptive-icon.png` | 1024×1024 PNG foreground, bg color `#7F77DD` (sudah di [app.json](app.json)) |
-| Splash screen | `assets/splash.png` | 1242×2436 PNG, brand color bg |
-| Notification icon (Android) | `assets/notification-icon.png` | 96×96 white PNG (Android wajib monochrome) |
-| Play Store feature graphic | `store/play-feature.png` | 1024×500 PNG |
-| Play Store screenshots | `store/play-*.png` | min 2, max 8, 16:9 atau 9:16 |
-| App Store screenshots | `store/ios-*.png` | per device size (6.7", 6.5", 5.5") |
-| Privacy Policy HTML | host di domain sendiri | URL masuk Play Console + App Store |
+| Asset                       | Lokasi                         | Spec                                                                         |
+| --------------------------- | ------------------------------ | ---------------------------------------------------------------------------- |
+| App icon (iOS)              | `assets/icon.png`              | 1024×1024 PNG, no alpha, no rounded corners (iOS handle)                     |
+| App icon (Android adaptive) | `assets/adaptive-icon.png`     | 1024×1024 PNG foreground, bg color `#7F77DD` (sudah di [app.json](app.json)) |
+| Splash screen               | `assets/splash.png`            | 1242×2436 PNG, brand color bg                                                |
+| Notification icon (Android) | `assets/notification-icon.png` | 96×96 white PNG (Android wajib monochrome)                                   |
+| Play Store feature graphic  | `store/play-feature.png`       | 1024×500 PNG                                                                 |
+| Play Store screenshots      | `store/play-*.png`             | min 2, max 8, 16:9 atau 9:16                                                 |
+| App Store screenshots       | `store/ios-*.png`              | per device size (6.7", 6.5", 5.5")                                           |
+| Privacy Policy HTML         | host di domain sendiri         | URL masuk Play Console + App Store                                           |
 
 ### 25.2 Deep link scheme
 
 Scheme: `arisan://` (sudah set di [app.json](app.json) `expo.scheme`).
 
-Route pattern (handle di [app/_layout.tsx](app/_layout.tsx) dengan Expo Router auto-handling):
+Route pattern (handle di [app/\_layout.tsx](app/_layout.tsx) dengan Expo Router auto-handling):
 
-| URL | Screen | Use case |
-|-----|--------|----------|
-| `arisan://` | Beranda | Cold start |
-| `arisan://join/{code}` | Join group flow | Invite link |
-| `arisan://group/{id}` | Detail grup, default tab | Push notif "payment confirmed" |
-| `arisan://group/{id}?tab=urutan` | Tab urutan | Push notif "pelaksanaan reminder" |
-| `arisan://group/{id}?tab=chat` | Tab chat | Push notif "new message" |
-| `arisan://winner?groupId=X&periode=Y` | Winner screen | Push notif "you won!" |
-| `arisan://approval?requestId=X` | Approval (recipient) | Push notif "swap request" |
-| `arisan://riwayat?groupId=X` | Riwayat | Push notif "payment confirmed" |
+| URL                                   | Screen                   | Use case                          |
+| ------------------------------------- | ------------------------ | --------------------------------- |
+| `arisan://`                           | Beranda                  | Cold start                        |
+| `arisan://join/{code}`                | Join group flow          | Invite link                       |
+| `arisan://group/{id}`                 | Detail grup, default tab | Push notif "payment confirmed"    |
+| `arisan://group/{id}?tab=urutan`      | Tab urutan               | Push notif "pelaksanaan reminder" |
+| `arisan://group/{id}?tab=chat`        | Tab chat                 | Push notif "new message"          |
+| `arisan://winner?groupId=X&periode=Y` | Winner screen            | Push notif "you won!"             |
+| `arisan://approval?requestId=X`       | Approval (recipient)     | Push notif "swap request"         |
+| `arisan://riwayat?groupId=X`          | Riwayat                  | Push notif "payment confirmed"    |
 
 ### 25.3 Universal Links (iOS) & App Links (Android)
 
@@ -1099,24 +1141,25 @@ Format kode: 5-7 char alphanumeric, generate di Cloud Function `createInviteCode
 
 ## 26. Risks & Mitigations (PRD §12 + ops)
 
-| Risiko | Probabilitas | Dampak | Mitigasi |
-|--------|--------------|--------|----------|
-| **Scope creep** — FOMO tambah fitur Phase 2 ke MVP | Tinggi | Tinggi | Strict P0 only. Setiap "kayanya perlu" → masuk backlog Phase 2, JANGAN langsung kode. Lihat §12 Out of Scope. |
-| **Kompleksitas Cloud Functions** (tim baru) | Sedang | Sedang | Mulai dari `rateLimitOTP` (paling sederhana). Pakai Emulator untuk dev lokal. Code review wajib dari senior untuk function pertama tim. |
-| **OTP abuse** — Firebase bill membengkak | Sedang | Tinggi | `rateLimitOTP` Cloud Function max 5×/jam/nomor. Set budget alert di GCP Console: warn $50, kill switch $200. |
-| **Race condition** swap/bayar | Sedang | Tinggi | Wajib Firestore Transaction di semua Cloud Function aksi kritis. Test integration di Emulator. |
-| **Push notif tidak reliable** | Rendah (dengan v2.0) | Tinggi | Cloud Scheduler + dedup log. Monitor via event `notif_opened` vs jumlah sent. Target ≥ 95% delivery. |
-| **User resistance** — prefer WhatsApp | Sedang | Tinggi | Onboarding tekankan **transparansi** yang WA tidak bisa berikan. Test value-prop di closed beta. |
-| **App Store rejection** | Rendah (dengan v2.0) | Tinggi | Privacy Policy + ToS + delete account flow di Week 9. Test submit ke TestFlight Week 10. |
-| **UU PDP compliance gap** | Rendah | Tinggi | Data residency Jakarta region. Delete account = anonymize semua referensi user (set `userId` → `deleted-user-xxx`, hapus `users/{userId}` doc). |
-| **Firebase free tier limit** | Sedang | Sedang | Monitor di Firebase Console. Free tier: 50K reads/day, 20K writes/day. Closed beta 10 grup × 10 anggota ≈ aman. Naik ke Blaze plan saat hit 80% quota. |
-| **Drift design system** | Sedang | Sedang | PR template ada checklist "pakai token dari src/theme". Linter rule untuk reject hex literal (Phase 2). |
-| **Onboarding tinggi** untuk ketua | Sedang | Sedang | Empty state Beranda dengan ilustrasi + 1-click "Buat grup pertama". Tooltip first-time untuk FAB. |
-| **Member churn pertengahan arisan** | Sedang | Tinggi | OUT OF SCOPE MVP — handle di Phase 2 (PRD §14.2). Untuk MVP: tampilkan warning di pengaturan "Hapus anggota tidak bisa dibatalkan, periodenya akan kosong". |
+| Risiko                                             | Probabilitas         | Dampak | Mitigasi                                                                                                                                                    |
+| -------------------------------------------------- | -------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Scope creep** — FOMO tambah fitur Phase 2 ke MVP | Tinggi               | Tinggi | Strict P0 only. Setiap "kayanya perlu" → masuk backlog Phase 2, JANGAN langsung kode. Lihat §12 Out of Scope.                                               |
+| **Kompleksitas Cloud Functions** (tim baru)        | Sedang               | Sedang | Mulai dari `rateLimitOTP` (paling sederhana). Pakai Emulator untuk dev lokal. Code review wajib dari senior untuk function pertama tim.                     |
+| **OTP abuse** — Firebase bill membengkak           | Sedang               | Tinggi | `rateLimitOTP` Cloud Function max 5×/jam/nomor. Set budget alert di GCP Console: warn $50, kill switch $200.                                                |
+| **Race condition** swap/bayar                      | Sedang               | Tinggi | Wajib Firestore Transaction di semua Cloud Function aksi kritis. Test integration di Emulator.                                                              |
+| **Push notif tidak reliable**                      | Rendah (dengan v2.0) | Tinggi | Cloud Scheduler + dedup log. Monitor via event `notif_opened` vs jumlah sent. Target ≥ 95% delivery.                                                        |
+| **User resistance** — prefer WhatsApp              | Sedang               | Tinggi | Onboarding tekankan **transparansi** yang WA tidak bisa berikan. Test value-prop di closed beta.                                                            |
+| **App Store rejection**                            | Rendah (dengan v2.0) | Tinggi | Privacy Policy + ToS + delete account flow di Week 9. Test submit ke TestFlight Week 10.                                                                    |
+| **UU PDP compliance gap**                          | Rendah               | Tinggi | Data residency Jakarta region. Delete account = anonymize semua referensi user (set `userId` → `deleted-user-xxx`, hapus `users/{userId}` doc).             |
+| **Firebase free tier limit**                       | Sedang               | Sedang | Monitor di Firebase Console. Free tier: 50K reads/day, 20K writes/day. Closed beta 10 grup × 10 anggota ≈ aman. Naik ke Blaze plan saat hit 80% quota.      |
+| **Drift design system**                            | Sedang               | Sedang | PR template ada checklist "pakai token dari src/theme". Linter rule untuk reject hex literal (Phase 2).                                                     |
+| **Onboarding tinggi** untuk ketua                  | Sedang               | Sedang | Empty state Beranda dengan ilustrasi + 1-click "Buat grup pertama". Tooltip first-time untuk FAB.                                                           |
+| **Member churn pertengahan arisan**                | Sedang               | Tinggi | OUT OF SCOPE MVP — handle di Phase 2 (PRD §14.2). Untuk MVP: tampilkan warning di pengaturan "Hapus anggota tidak bisa dibatalkan, periodenya akan kosong". |
 
 ### 26.1 Budget monitoring
 
 Buat GCP Budget alerts (`arisan-dev` & `arisan-prod` masing-masing):
+
 - 50% threshold → email ke tim
 - 90% threshold → email + Slack webhook
 - 100% threshold → email + auto-disable billing (development project only)
@@ -1128,6 +1171,7 @@ Buat GCP Budget alerts (`arisan-dev` & `arisan-prod` masing-masing):
 Mapping minggu PRD ke artefak konkret di repo ini.
 
 ### Week 1 — Setup & Fondasi
+
 - [ ] Buat Firebase project `arisan-dev` & `arisan-prod` region `asia-southeast2`
 - [ ] Setup ESLint/Prettier/Husky (§22), commit ke `main`
 - [ ] Install Firebase SDK + setup [src/services/firebase.ts](src/services/firebase.ts) dengan offline persistence (§20.1)
@@ -1137,6 +1181,7 @@ Mapping minggu PRD ke artefak konkret di repo ini.
 - [ ] Setup EAS project: `eas build:configure`
 
 ### Week 2 — Auth Flow
+
 - [ ] Build screen: Splash → Input HP → OTP → Consent (§1.5)
 - [ ] Cloud Function `rateLimitOTP` (paling sederhana, mulai dari sini per §18.4)
 - [ ] Zustand store `auth` — current user, login state, logout
@@ -1145,6 +1190,7 @@ Mapping minggu PRD ke artefak konkret di repo ini.
 - [ ] Test: rate limit kicks in after 5 attempts (Emulator)
 
 ### Week 3 — Group Management
+
 - [ ] Buat grup form (§1.5)
 - [ ] Generate invite code + share deep link (§25.4)
 - [ ] Join via code/link landing (§25.2)
@@ -1153,6 +1199,7 @@ Mapping minggu PRD ke artefak konkret di repo ini.
 - [ ] Firestore Security Rules: `groups`, `members` (deny-all client write untuk groups, member self-read)
 
 ### Week 4 — Tracking Pembayaran
+
 - [ ] Cloud Function `validatePayment` dengan Firestore Transaction
 - [ ] Wire tab Pembayaran ke real data
 - [ ] Period picker (§1.5 gap)
@@ -1162,6 +1209,7 @@ Mapping minggu PRD ke artefak konkret di repo ini.
 - [ ] Unit test: late detection edge cases
 
 ### Week 5 — Sistem Undian
+
 - [ ] **Rombak [UndianModal](src/screens/UndianModal.tsx)**: ganti `Math.random()` → `httpsCallable('triggerUndian')` (§1.5 mismatch #1)
 - [ ] **Rombak mode**: Mode 1 vs Mode 3 di group setup, bukan per-undian (§1.5 mismatch #2)
 - [ ] **Wajibkan alasan** Manual/Offline (§1.5 mismatch #4)
@@ -1170,6 +1218,7 @@ Mapping minggu PRD ke artefak konkret di repo ini.
 - [ ] Append `winners/{periodeId}` + `activityLog`
 
 ### Week 6 — Pemenang & Tanggal
+
 - [ ] **Refactor [set-date.tsx](app/set-date.tsx)**: ganti hardcoded date ke real dayjs (§1.5 gap)
 - [ ] Lock tanggal setelah confirm (sudah ada di UI, wire ke Firestore)
 - [ ] Cloud Scheduler `checkTanggalDeadline` — notif ketua jika H+3 belum set
@@ -1177,6 +1226,7 @@ Mapping minggu PRD ke artefak konkret di repo ini.
 - [ ] Cloud Scheduler `sendPelaksanaanReminder` cron H-3/H-1/H-0
 
 ### Week 7 — Tukar Giliran & Chat
+
 - [ ] **Fix limit tukar**: 1× → 2× (§1.5 mismatch #3)
 - [ ] Cloud Function `requestSwap` (Layer 1) + push notif ke recipient
 - [ ] Cloud Function `approveSwap` (Layer 2) dengan Firestore Transaction
@@ -1185,6 +1235,7 @@ Mapping minggu PRD ke artefak konkret di repo ini.
 - [ ] Firestore Security Rules: messages append-only, no delete/update
 
 ### Week 8 — Activity Log & Unit Testing
+
 - [ ] Wire [riwayat.tsx](app/riwayat.tsx) ke `activityLog` collection
 - [ ] Filter timezone (§9)
 - [ ] Setup Jest + Firebase Emulator config (§22.7)
@@ -1196,6 +1247,7 @@ Mapping minggu PRD ke artefak konkret di repo ini.
 - [ ] Target coverage > 80% functions kritis
 
 ### Week 9 — Security & Legal
+
 - [ ] Firestore Rules complete + test suite 100% (§22.7 `test:rules`)
 - [ ] Privacy Policy screen + host HTML version
 - [ ] Terms of Service screen
@@ -1206,6 +1258,7 @@ Mapping minggu PRD ke artefak konkret di repo ini.
 - [ ] Setup Sentry (opsional)
 
 ### Week 10 — Polish & Build
+
 - [ ] Detox E2E setup + 5 core flows pass (§11)
 - [ ] EAS Build preview APK Android — test di 3 device fisik
 - [ ] EAS Build TestFlight iOS — test di 2 device fisik

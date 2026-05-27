@@ -13,6 +13,7 @@ import {
 } from 'lucide-react-native';
 import { Avatar } from '@/components';
 import { colors, fonts, radii, shadows } from '@/theme';
+import { useAuthStore } from '@/stores/auth';
 
 type MenuItem = {
   label: string;
@@ -21,7 +22,27 @@ type MenuItem = {
   onPress: () => void;
 };
 
+function maskPhone(phone: string | undefined): string {
+  if (!phone) return '';
+  // +62 8xx-xxxx-xxxx → "+62 ••• ••• 7890"
+  const digits = phone.replace(/^\+62/, '');
+  if (digits.length < 4) return `+62 ••• ••• ${digits}`;
+  return `+62 ••• ••• ${digits.slice(-4)}`;
+}
+
 export default function ProfilScreen() {
+  const nama = useAuthStore((s) => s.user?.nama) ?? '';
+  const phone = useAuthStore((s) => s.user?.phone);
+  const logout = useAuthStore((s) => s.logout);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      router.replace('/auth/phone');
+    }
+  };
+
   const menus: MenuItem[] = [
     {
       label: 'Notifikasi Pemenang',
@@ -69,10 +90,10 @@ export default function ProfilScreen() {
       >
         {/* Profile hero */}
         <View style={[styles.hero, shadows.card]}>
-          <Avatar name="Budi Santoso" size={64} />
+          <Avatar name={nama || 'Anggota'} size={64} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.name}>Budi Santoso</Text>
-            <Text style={styles.email}>budi.santoso@email.com</Text>
+            <Text style={styles.name}>{nama || 'Anggota'}</Text>
+            <Text style={styles.phoneMasked}>{maskPhone(phone)}</Text>
             <View style={styles.ketuaBadge}>
               <Text style={styles.ketuaText}>KETUA · Arisan RT 03</Text>
             </View>
@@ -106,6 +127,7 @@ export default function ProfilScreen() {
         </View>
 
         <Pressable
+          onPress={handleLogout}
           style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.8 }]}
         >
           <LogOut size={18} color={colors.danger} strokeWidth={1.75} />
@@ -135,11 +157,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     letterSpacing: -0.18,
   },
-  email: {
-    fontFamily: fonts.regular,
+  phoneMasked: {
+    fontFamily: fonts.medium,
     fontSize: 13,
     color: colors.textSubtle,
     marginTop: 2,
+    letterSpacing: 0.5,
   },
   ketuaBadge: {
     alignSelf: 'flex-start',
