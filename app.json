@@ -9,14 +9,16 @@
     "scheme": "arisan",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.arisan.app"
+      "bundleIdentifier": "com.arisan.app",
+      "googleServicesFile": "./dev/GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#7F77DD"
       },
       "package": "com.arisan.app",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./dev/google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -24,7 +26,18 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/crashlytics",
+      "@react-native-firebase/perf",
+      [
+        "expo-build-properties",
+        {
+          "ios": { "useFrameworks": "static" },
+          "android": {}
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,0 +1,34 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci --legacy-peer-deps
+      - run: npm run typecheck
+      - run: npm run lint
+      - name: Build functions
+        run: |
+          cd functions
+          npm ci
+          npm run build
+
+  # TODO Phase 8: enable when Jest + @firebase/rules-unit-testing are installed.
+  # rules-test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #     - run: npm install -g firebase-tools
+  #     - run: npm ci --legacy-peer-deps
+  #     - run: npm run test:rules

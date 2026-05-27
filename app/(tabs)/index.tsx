@@ -1,30 +1,15 @@
 import React from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Bell, Plus, Star } from 'lucide-react-native';
 import { Avatar, Badge, IconButton } from '@/components';
-import {
-  avatarColor,
-  colors,
-  fonts,
-  initials,
-  money,
-  radii,
-  shadows,
-} from '@/theme';
+import { avatarColor, colors, fonts, initials, money, radii, shadows } from '@/theme';
 import { GROUPS, Group } from '@/data/mock';
 
 export default function DashboardScreen() {
   const total = GROUPS.reduce((s, g) => s + g.iuran, 0);
-  const insets = useSafeAreaInsets();
-  const tabBarHeight = 56 + Math.max(insets.bottom, 8);
+  useSafeAreaInsets();
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -85,11 +70,7 @@ export default function DashboardScreen() {
         {/* Groups */}
         <View style={{ gap: 10 }}>
           {GROUPS.map((g) => (
-            <GroupCard
-              key={g.id}
-              group={g}
-              onPress={() => router.push(`/group/${g.id}`)}
-            />
+            <GroupCard key={g.id} group={g} onPress={() => router.push(`/group/${g.id}`)} />
           ))}
         </View>
       </ScrollView>
@@ -121,9 +102,7 @@ function GroupCard({ group, onPress }: { group: Group; onPress: () => void }) {
         pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] },
       ]}
     >
-      <View
-        style={[styles.groupIcon, { backgroundColor: c.bg }]}
-      >
+      <View style={[styles.groupIcon, { backgroundColor: c.bg }]}>
         <Text style={[styles.groupIconText, { color: c.ink }]}>
           {initials(group.name.replace(/^Arisan\s+/, ''))}
         </Text>

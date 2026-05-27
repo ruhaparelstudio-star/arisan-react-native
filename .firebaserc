@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "arisan-dev",
+    "dev": "arisan-dev",
+    "prod": "arisan-prod"
+  }
+}

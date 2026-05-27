@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  ViewStyle,
-  StyleProp,
-  PressableProps,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, ViewStyle, StyleProp, PressableProps } from 'react-native';
 import { colors, fonts, radii, shadows } from '@/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';

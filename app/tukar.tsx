@@ -1,16 +1,9 @@
 import React, { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ArrowUpRight, Check, Lock } from 'lucide-react-native';
-import { Avatar, Button, Header, Toast } from '@/components';
+import { Button, Header } from '@/components';
 import { avatarColor, colors, fonts, initials, radii } from '@/theme';
 import { SWAP_CANDIDATES } from '@/data/mock';
 
@@ -89,24 +82,19 @@ export default function TukarScreen() {
             numberOfLines={3}
             placeholder="Contoh: ada keperluan mendadak di bulan itu..."
             placeholderTextColor={colors.textSubtle}
-            style={[
-              styles.textarea,
-              sent && { backgroundColor: colors.surface },
-            ]}
+            style={[styles.textarea, sent && { backgroundColor: colors.surface }]}
           />
         </View>
 
         <Text style={styles.note}>
-          Request akan dikirim ke anggota yang dipilih untuk disetujui, kemudian
-          menunggu persetujuan ketua.
+          Request akan dikirim ke anggota yang dipilih untuk disetujui, kemudian menunggu
+          persetujuan ketua.
         </Text>
 
         {sent && (
           <View style={styles.sentBanner}>
             <Check size={16} color={colors.successInk} strokeWidth={2.5} />
-            <Text style={styles.sentText}>
-              Request terkirim · menunggu persetujuan
-            </Text>
+            <Text style={styles.sentText}>Request terkirim · menunggu persetujuan</Text>
           </View>
         )}
       </ScrollView>
@@ -117,11 +105,7 @@ export default function TukarScreen() {
           full
           disabled={!canSubmit}
           onPress={() => canSubmit && setSent(true)}
-          trailing={
-            !sent ? (
-              <ArrowUpRight size={16} color="#FFF" strokeWidth={2.2} />
-            ) : undefined
-          }
+          trailing={!sent ? <ArrowUpRight size={16} color="#FFF" strokeWidth={2.2} /> : undefined}
         >
           {sent ? 'Request Sudah Terkirim' : 'Kirim Request Tukar'}
         </Button>
@@ -148,11 +132,7 @@ function CandidateCard({
       style={[
         styles.candCard,
         {
-          backgroundColor: disabled
-            ? colors.surface
-            : selected
-            ? '#EEEDFE'
-            : '#FFF',
+          backgroundColor: disabled ? colors.surface : selected ? '#EEEDFE' : '#FFF',
           borderColor: selected ? colors.primary : colors.border,
           opacity: disabled ? 0.75 : 1,
         },
@@ -167,38 +147,19 @@ function CandidateCard({
         {disabled ? (
           <Lock size={16} color={colors.textSubtle} strokeWidth={1.75} />
         ) : (
-          <Text style={[styles.candAvatarText, { color: color.ink }]}>
-            {initials(c.name)}
-          </Text>
+          <Text style={[styles.candAvatarText, { color: color.ink }]}>{initials(c.name)}</Text>
         )}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text
-          style={[
-            styles.candName,
-            disabled && { color: colors.textMuted },
-          ]}
-        >
-          {c.name}
-        </Text>
-        <Text
-          style={[
-            styles.candSub,
-            disabled && { color: colors.textSubtle },
-          ]}
-        >
-          {disabled
-            ? c.reason
-            : `Giliran #${c.period} → akan pindah ke giliran #${MY_PERIOD}`}
+        <Text style={[styles.candName, disabled && { color: colors.textMuted }]}>{c.name}</Text>
+        <Text style={[styles.candSub, disabled && { color: colors.textSubtle }]}>
+          {disabled ? c.reason : `Giliran #${c.period} → akan pindah ke giliran #${MY_PERIOD}`}
           {selected && !disabled ? ' (milik kamu)' : ''}
         </Text>
       </View>
       {!disabled && (
         <View
-          style={[
-            styles.radio,
-            { borderColor: selected ? colors.primary : colors.borderStrong },
-          ]}
+          style={[styles.radio, { borderColor: selected ? colors.primary : colors.borderStrong }]}
         >
           {selected && <View style={styles.radioInner} />}
         </View>
