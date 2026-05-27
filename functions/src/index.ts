@@ -11,3 +11,5 @@ export const helloWorld = onCall((req) => {
 export { rateLimitOTP } from './callable/rateLimitOTP';
 export { createGroup } from './callable/createGroup';
 export { joinViaCode } from './callable/joinViaCode';
+export { triggerUndian } from './callable/triggerUndian';
+export { presetUrutanMode1 } from './callable/presetUrutanMode1';

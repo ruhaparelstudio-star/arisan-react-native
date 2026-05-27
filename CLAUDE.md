@@ -79,23 +79,15 @@ UI shell sekarang **bukan sekadar belum di-wire ke backend** — ada mismatch st
 
 ### 🔴 Mismatch kritis (UI ada tapi salah)
 
-1. **Undian pakai `Math.random()` di client** — [src/screens/UndianModal.tsx:54-58](src/screens/UndianModal.tsx#L54-L58)
-   - PRD §6.2 & §10.3: random WAJIB server-side via Cloud Function `triggerUndian`.
-   - **Aksi:** ganti dengan `httpsCallable('triggerUndian')`. Hapus `Math.random()` selamanya.
+1. ~~**Undian pakai `Math.random()` di client**~~ ✅ **FIXED Phase 5** — `Math.random()` di [UndianModal.tsx](src/screens/UndianModal.tsx) dihapus, diganti `callable('triggerUndian')`. Random server-side via `crypto.randomInt` di [functions/src/lib/random.ts](functions/src/lib/random.ts).
 
-2. **Mode undian salah konsep** — [src/screens/UndianModal.tsx:16-35](src/screens/UndianModal.tsx#L16-L35)
-   - UI sekarang: Random / Manual / Offline (3 opsi sub-pilihan)
-   - PRD §4.2 F04: **Mode 1 (pre-determined: seluruh urutan di-generate di awal arisan)** & **Mode 3 (hybrid: periode 1 random semua, berikutnya dari yang belum menang)**.
-   - **Aksi:** rombak modal jadi pilihan Mode 1/Mode 3 di level grup (setup awal), bukan per-undian. Manual/Offline harus jadi sub-opsi override ketua, bukan mode utama.
+2. ~~**Mode undian salah konsep**~~ ✅ **FIXED Phase 5** — Mode 1 / Mode 3 sekarang di setup grup ([app/grup/baru.tsx](app/grup/baru.tsx) Phase 3). UndianModal hanya dipakai per-periode (Mode 3) atau override ketua (Mode 1). Mode 1 generate seluruh urutan sekaligus via Cloud Function [presetUrutanMode1](functions/src/callable/presetUrutanMode1.ts).
 
 3. **Limit tukar giliran salah angka** — [app/tukar.tsx:46](app/tukar.tsx#L46) hardcoded `"1× sisa"`
    - PRD §4.2 F06: maksimal **2×** per anggota.
    - **Aksi:** ganti ke `2× sisa` dan tracking `jumlahTukar` di `members/{userId}`.
 
-4. **Alasan undian Manual/Offline tidak diwajibkan** — [src/screens/UndianModal.tsx:50](src/screens/UndianModal.tsx#L50)
-   - `canConfirm = winner.trim().length > 0` — field `note` tidak dicek.
-   - PRD §4.2 F04: alasan **WAJIB** tersimpan di `winners` + `activityLog`.
-   - **Aksi:** `canConfirm = winner && note.trim().length > 0` untuk Manual/Offline.
+4. ~~**Alasan undian Manual/Offline tidak diwajibkan**~~ ✅ **FIXED Phase 5** — `canConfirm` di [UndianModal.tsx](src/screens/UndianModal.tsx) sekarang cek `winnerId && note.trim()` untuk Manual/Offline; Cloud Function [triggerUndian](functions/src/callable/triggerUndian.ts) juga throw `invalid-argument` jika alasan kosong. `alasan` tersimpan di `winners/{periodeId}` + `activityLog`.
 
 5. ~~**Profil pakai email, bukan nomor HP**~~ ✅ **FIXED Phase 2** — email dihapus, diganti masked phone `+62 ••• ••• {last4}` (hanya untuk konfirmasi diri sendiri, tidak ditampilkan ke anggota lain). Nama diambil dari `useAuthStore`, bukan hardcoded.
 

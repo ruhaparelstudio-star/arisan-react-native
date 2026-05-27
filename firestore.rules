@@ -32,6 +32,11 @@ service cloud.firestore {
         allow read: if request.auth != null && isMember(groupId);
         allow write, delete: if false; // append-only via Cloud Function
       }
+
+      match /winners/{periodeId} {
+        allow read: if request.auth != null && isMember(groupId);
+        allow write: if false; // server-side only via Cloud Function
+      }
     }
 
     // CollectionGroup query: user discover grup yang dia ikuti via

@@ -56,7 +56,7 @@ export default function DetailScreen() {
       </View>
 
       {tab === 'pembayaran' && <PembayaranTab />}
-      {tab === 'urutan' && <UrutanTab />}
+      {tab === 'urutan' && <UrutanTab groupId={params.id} />}
       {tab === 'chat' && <ChatTab embedded />}
     </SafeAreaView>
   );
