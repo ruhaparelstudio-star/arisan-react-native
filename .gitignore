@@ -38,3 +38,22 @@ yarn-error.*
 
 # @generated expo-cli sync-2b81b286409207a5da26e14c78851eb30d8ccbdb
 # @end expo-cli
+
+# Firebase config (downloaded from Console — DO NOT COMMIT)
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+/dev/
+/prod/
+
+# Cloud Functions build artifacts
+functions/lib/
+functions/node_modules/
+
+# Firebase Emulator
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+.firebase/
+

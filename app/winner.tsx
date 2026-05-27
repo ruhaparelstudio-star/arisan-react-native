@@ -1,28 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Easing,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { Button, IconButton } from '@/components';
 import { colors, fonts, radii, shadows } from '@/theme';
 
-const CONFETTI_COLORS = [
-  '#7F77DD',
-  '#1D9E75',
-  '#BA7517',
-  '#993C1D',
-  '#4A43A8',
-  '#FFC857',
-];
+const CONFETTI_COLORS = ['#7F77DD', '#1D9E75', '#BA7517', '#993C1D', '#4A43A8', '#FFC857'];
 
 type Confetto = {
   left: number;
@@ -95,11 +80,7 @@ export default function WinnerScreen() {
           <Button full onPress={() => router.push('/set-date')}>
             Set Tanggal Pelaksanaan
           </Button>
-          <Pressable
-            style={styles.laterBtn}
-            onPress={() => router.back()}
-            hitSlop={4}
-          >
+          <Pressable style={styles.laterBtn} onPress={() => router.back()} hitSlop={4}>
             <Text style={styles.laterLabel}>Nanti saja</Text>
           </Pressable>
         </View>
@@ -127,7 +108,7 @@ function ConfettoPiece({ c }: { c: Confetto }) {
             duration: 0,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start();
     run();
   }, []);
@@ -183,7 +164,7 @@ function TrophyCircle() {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
   }, []);
   const translateY = bob.interpolate({
@@ -195,10 +176,7 @@ function TrophyCircle() {
     outputRange: ['-3deg', '3deg', '-3deg'],
   });
   return (
-    <LinearGradient
-      colors={['#FFFFFF', '#EFEDFB']}
-      style={styles.trophyCircle}
-    >
+    <LinearGradient colors={['#FFFFFF', '#EFEDFB']} style={styles.trophyCircle}>
       <Animated.Text
         style={{
           fontSize: 64,

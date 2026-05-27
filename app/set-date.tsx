@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
@@ -16,7 +10,7 @@ import {
   ChevronRight,
   Info,
 } from 'lucide-react-native';
-import { Button, IconButton, Header } from '@/components';
+import { Button, Header } from '@/components';
 import { colors, fonts, radii, shadows } from '@/theme';
 
 const TODAY = 12;
@@ -45,9 +39,7 @@ export default function SetDateScreen() {
         <Header title="Set Tanggal" onBack={() => router.back()} />
         <View style={styles.warningRow}>
           <AlertCircle size={13} color={colors.danger} strokeWidth={2} />
-          <Text style={styles.warningText}>
-            Tanggal tidak bisa diubah setelah dikonfirmasi
-          </Text>
+          <Text style={styles.warningText}>Tanggal tidak bisa diubah setelah dikonfirmasi</Text>
         </View>
       </View>
 
@@ -73,13 +65,7 @@ export default function SetDateScreen() {
         <View style={[styles.calendar, shadows.card]}>
           <View style={styles.dowRow}>
             {DOW.map((d, i) => (
-              <Text
-                key={d}
-                style={[
-                  styles.dowText,
-                  i === 0 && { color: colors.danger },
-                ]}
-              >
+              <Text key={d} style={[styles.dowText, i === 0 && { color: colors.danger }]}>
                 {d}
               </Text>
             ))}
@@ -136,9 +122,7 @@ export default function SetDateScreen() {
           >
             {agreed && <Check size={14} color="#FFF" strokeWidth={3.2} />}
           </View>
-          <Text style={styles.checkLabel}>
-            Saya mengerti tanggal tidak bisa diubah sendiri
-          </Text>
+          <Text style={styles.checkLabel}>Saya mengerti tanggal tidak bisa diubah sendiri</Text>
         </Pressable>
 
         {confirmed && (
@@ -167,11 +151,7 @@ export default function SetDateScreen() {
 }
 
 function CalNavBtn({ children }: { children: React.ReactNode }) {
-  return (
-    <View style={styles.calNavBtn}>
-      {children}
-    </View>
-  );
+  return <View style={styles.calNavBtn}>{children}</View>;
 }
 
 function DayCell({
