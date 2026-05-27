@@ -27,6 +27,10 @@ export function Toast({ message, variant = 'dark', onHide, duration = 2400 }: Pr
       ]).start(() => onHide?.());
     }, duration);
     return () => clearTimeout(t);
+    // Trigger restart hanya saat `message` berubah. `opacity`/`translateY` ref
+    // stabil; `duration`/`onHide` sengaja tidak di-track agar parent re-render
+    // tidak men-restart timer auto-hide di tengah jalan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message]);
 
   if (!message) return null;
